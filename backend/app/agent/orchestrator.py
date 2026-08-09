@@ -13,18 +13,18 @@ class Orchestrator:
     async def handle_command(self, session, user_text: str):
         """
         Main dispatch loop.
-        plan = await planner.decompose(user_text, context=session.state_summary())
+        """
+        plan = await self.planner.decompose(user_text, context=session.state_summary())
         for subtask in plan.subtasks:
-            agent = AGENT_REGISTRY[subtask.agent]
-            broadcast(session, ChatEvent(role="assistant", text=agent.narrate_intent(subtask)))
+            agent = session.AGENT_REGISTRY[subtask.agent]
+            # broadcast(session, ChatEvent(role="assistant", text=agent.narrate_intent(subtask)))
             if subtask.is_destructive:
-                approved = await request_approval(session, subtask)
+                approved = await session.request_approval(subtask)
                 if not approved:
                     continue
-            result = await agent.execute(subtask, tools=TOOL_REGISTRY[subtask.agent])
+            result = await agent.execute(subtask, tools=session.TOOL_REGISTRY[subtask.agent])
             session.log(subtask, result)
-            broadcast(session, FileChangedEvent(paths=result.changed_files))
-            broadcast(session, ChatEvent(role="assistant", text=agent.narrate_result(result)))
-        await verification_agent.run_checks(session)
-        """
-        pass
+            # broadcast(session, FileChangedEvent(paths=result.changed_files))
+            # broadcast(session, ChatEvent(role="assistant", text=agent.narrate_result(result)))
+        
+        # await verification_agent.run_checks(session)
