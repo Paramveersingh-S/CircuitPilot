@@ -1,0 +1,23 @@
+version: '3.8'
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      - KICAD_HOST_URL=http://kicad-host:5000
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+
+  kicad-host:
+    image: kicad/kicad:9.0
+    ports:
+      - "5000:5000"
+    command: kicad-cli server --headless
