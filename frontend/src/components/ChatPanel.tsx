@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 
-export const ChatPanel: React.FC<{ onSendCommand: (cmd: string) => void }> = ({ onSendCommand }) => {
+export interface ChatMessage { role: 'user' | 'assistant'; text: string; }
+
+export const ChatPanel: React.FC<{ 
+  onSendCommand: (cmd: string) => void,
+  messages: ChatMessage[] 
+}> = ({ onSendCommand, messages }) => {
   const [input, setInput] = useState('');
-  const [history, setHistory] = useState<{ role: string; text: string }[]>([]);
 
   const handleSend = () => {
     if (!input.trim()) return;
-    setHistory([...history, { role: 'user', text: input }]);
     onSendCommand(input);
     setInput('');
   };
@@ -15,7 +18,7 @@ export const ChatPanel: React.FC<{ onSendCommand: (cmd: string) => void }> = ({ 
     <div className="chat-panel" style={{ width: '300px', display: 'flex', flexDirection: 'column', borderRight: '1px solid #ccc', padding: '1rem' }}>
       <h2>Chat Panel</h2>
       <div className="chat-history" style={{ flex: 1, overflowY: 'auto', marginBottom: '1rem' }}>
-        {history.map((msg, i) => (
+        {messages.map((msg, i) => (
           <div key={i} style={{ textAlign: msg.role === 'user' ? 'right' : 'left', margin: '0.5rem 0' }}>
             <span style={{ background: msg.role === 'user' ? '#e6f7ff' : '#f0f0f0', padding: '0.5rem', borderRadius: '4px', display: 'inline-block' }}>
               {msg.text}
