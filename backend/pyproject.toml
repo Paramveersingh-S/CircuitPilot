@@ -1,10 +1,17 @@
 [project]
 name = "circuitpilot-backend"
 version = "0.1.0"
+description = "CircuitPilot Backend - AI-Enabled Real-Time PCB Design Copilot"
+requires-python = ">=3.11"
 dependencies = [
-    "fastapi",
-    "uvicorn[standard]",
-    "websockets",
-    "kicad-python",
-    "atopile"
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "websockets>=11.0.3",
+    "kicad-python>=0.6.0",
+    "atopile>=0.2.0",
+    "pydantic>=2.0.0"
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

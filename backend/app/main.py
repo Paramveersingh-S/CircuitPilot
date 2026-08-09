@@ -1,12 +1,32 @@
 from fastapi import FastAPI, WebSocket
-from .kicad_host.session_manager import SessionManager
+from fastapi.middleware.cors import CORSMiddleware
+import json
 
-app = FastAPI(title="CircuitPilot API")
-session_manager = SessionManager()
+app = FastAPI(title="CircuitPilot Backend")
 
-@app.websocket("/ws/{client_id}")
-async def websocket_endpoint(websocket: WebSocket, client_id: str):
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/")
+def read_root():
+    return {"message": "CircuitPilot Backend is running"}
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-    while True:
-        data = await websocket.receive_text()
-        await websocket.send_text(f"Message text was: {data}")
+    try:
+        while True:
+            data = await websocket.receive_text()
+            # Echo back for testing in Phase 0
+            await websocket.send_text(json.dumps({
+                "type": "chat",
+                "role": "assistant",
+                "text": f"Echo: {json.loads(data).get('text', '')}"
+            }))
+    except Exception as e:
+        print(f"WebSocket Error: {e}")

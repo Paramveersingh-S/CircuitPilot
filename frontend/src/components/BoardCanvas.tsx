@@ -1,14 +1,10 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 
-export const BoardCanvas: React.FC<{ fileUrl: string }> = ({ fileUrl }) => {
-    const containerRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        // KiCanvas initialization logic
-        if (containerRef.current) {
-            containerRef.current.innerHTML = `<kicanvas-embed src="${fileUrl}"></kicanvas-embed>`;
-        }
-    }, [fileUrl]);
-
-    return <div ref={containerRef} style={{ width: '100%', height: '100%' }} />;
+export const BoardCanvas: React.FC = () => {
+  return (
+    <div className="board-canvas">
+      <h2>KiCanvas Board View</h2>
+      {/* <kicanvas-embed src="..."></kicanvas-embed> */}
+    </div>
+  );
 };
