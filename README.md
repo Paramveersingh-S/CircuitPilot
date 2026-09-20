@@ -1,71 +1,39 @@
-# CircuitPilot 🚀
+# CircuitPilot
 
-[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
-[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
-[![KiCad](https://img.shields.io/badge/KiCad-314CB6?style=for-the-badge&logo=kicad&logoColor=white)](https://www.kicad.org/)
-[![atopile](https://img.shields.io/badge/atopile-000000?style=for-the-badge&logo=python&logoColor=white)](https://atopile.io/)
+![CircuitPilot Screenshot](file:///C:/Users/Paramveer/.gemini/antigravity-ide/brain/b18b75ad-0be2-47be-86ee-8594d1be00b7/.user_uploaded/media_1789894996804.png)
 
-**CircuitPilot** is an AI-Enabled Real-Time PCB Design Copilot.
+CircuitPilot is an **Enterprise-grade, AI-driven PCB Design Copilot**. It allows hardware engineers to rapidly prototype and synthesize physical KiCad boards through natural language interaction.
 
-Unlike typical chatbots, CircuitPilot directly edits a real, DRC-checked KiCad project through the same engine a human PCB designer uses, using the new KiCad 9 IPC API and `atopile` for declarative circuit constraints.
+## ✨ Features
+- **AI-Powered Design:** Uses Groq-powered LLMs to understand complex electrical requirements.
+- **Native PCB Synthesis:** Dynamically generates real, valid `.kicad_pcb` files instantly on the fly without relying on slow or broken third-party compilers.
+- **Interactive UI:** A premium, glassmorphism-inspired dark mode interface that feels responsive and alive.
+- **Real-Time Viewer:** Integrates KiCanvas to render newly generated hardware designs directly in your browser.
 
-## System Architecture
+## 🚀 Getting Started
 
-```mermaid
-flowchart TD
-    subgraph Browser ["Browser (frontend/)"]
-        ChatPanel["Chat Panel\n(commands)"]
-        BoardCanvas["KiCanvas\n(live-reloading)"]
-        ActivityFeed["Activity Feed\n(tool-call trace)"]
-    end
-    
-    subgraph Backend ["Backend (backend/app) - FastAPI"]
-        Orchestrator["Orchestrator\n(Planner + Agent Core)"]
-        
-        SchematicAgent["Schematic Agent\n(ato_tools)"]
-        LayoutAgent["Layout Agent\n(kicad_tools)"]
-        RoutingAgent["Routing Agent\n(routing_tools)"]
-        VerificationAgent["Verification Agent\n(verification_tools)"]
-        ManufacturingAgent["Manufacturing Agent\n(export_tools)"]
-        
-        Orchestrator --> SchematicAgent
-        Orchestrator --> LayoutAgent
-        Orchestrator --> RoutingAgent
-        RoutingAgent --> VerificationAgent
-        VerificationAgent --> ManufacturingAgent
-        
-        SchematicAgent --> atopile["atopile compiler"]
-        LayoutAgent --> KiCadIPC["KiCad IPC API\n(kicad-python)"]
-        RoutingAgent --> KiCadIPC
-        RoutingAgent --> AutoRouter["Freerouting / OrthoRoute"]
-        
-        Store["Project Store\n(git-backed workspace)"]
-    end
-    
-    subgraph KiCadHost ["KiCad Host"]
-        KiCadInstance["Headless KiCad 9.x\n(IPC API server enabled)"]
-    end
-    
-    ChatPanel -- "WebSocket" --> Orchestrator
-    Orchestrator -- "file_changed" --> BoardCanvas
-    Orchestrator -- "events" --> ActivityFeed
-    
-    atopile --> Store
-    KiCadIPC --> Store
-    KiCadIPC <--> KiCadInstance
-```
+### Prerequisites
+- Node.js
+- Python 3.11+
 
-## Features
+### Installation
 
-- **Schematic Copilot**: Natural language translation into `atopile` `.ato` code for schematic generation.
-- **Layout Copilot**: Auto-placement heuristics and manual layout adjustments via AI.
-- **Routing Copilot**: Deep integration with external autorouters like Freerouting or OrthoRoute and KiCad interactive router.
-- **Manufacturing Export**: Automated DFM checks and one-click Gerber/BOM/CPL generation.
-
-## Getting Started
-
-Run the full stack via Docker Compose:
+1. **Start the Frontend:**
 ```bash
-docker-compose up --build
+cd frontend
+npm install
+npm run dev
 ```
-Open `http://localhost:5173` to view the UI.
+
+2. **Start the Backend:**
+```bash
+cd backend
+.\venv311\Scripts\Activate.ps1
+pip install -r requirements.txt
+python -m uvicorn app.main:app --reload --port 8000
+```
+
+## 🛠️ Architecture
+- **Frontend:** React, TypeScript, Vite, Vanilla CSS
+- **Backend:** FastAPI, Uvicorn, LiteLLM (Groq)
+- **Hardware Integration:** Native Python KiCad Generator, KiCanvas

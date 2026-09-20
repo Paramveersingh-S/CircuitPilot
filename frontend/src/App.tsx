@@ -11,6 +11,7 @@ export const App: React.FC = () => {
   const [events, setEvents] = useState<CircuitPilotEvent[]>([]);
   const [chatMessages, setChatMessages] = useState<{role: 'user'|'assistant', text: string}[]>([]);
   const [boardSrc, setBoardSrc] = useState<string>('');
+  const [clarificationOptions, setClarificationOptions] = useState<{id: string, label: string}[]>([]);
 
   useEffect(() => {
     const newClient = new CircuitPilotClient(wsUrl);
@@ -22,6 +23,8 @@ export const App: React.FC = () => {
         setBoardSrc(ev.path);
       } else if (ev.type === 'chat') {
         setChatMessages((prev) => [...prev, { role: ev.role, text: ev.text }]);
+      } else if (ev.type === 'clarification_options') {
+        setClarificationOptions(ev.options);
       }
     });
 
@@ -34,12 +37,23 @@ export const App: React.FC = () => {
     if (client) {
       setChatMessages((prev) => [...prev, { role: 'user', text: cmd }]);
       client.sendCommand(cmd);
+      setClarificationOptions([]);
     }
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh', fontFamily: 'sans-serif' }}>
-      <ChatPanel onSendCommand={handleCommand} messages={chatMessages} />
+    <div style={{ 
+      display: 'flex', 
+      height: '100vh', 
+      fontFamily: 'Inter, sans-serif',
+      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+      color: 'var(--text-main)'
+    }}>
+      <ChatPanel 
+        onSendCommand={handleCommand} 
+        messages={chatMessages} 
+        clarificationOptions={clarificationOptions}
+      />
       <BoardCanvas srcPath={boardSrc} />
       <ActivityFeed events={events} />
     </div>

@@ -40,13 +40,19 @@ export type ApprovalRequiredEvent = BaseEvent & {
   detail: string;
 };
 
+export type ClarificationOptionsEvent = BaseEvent & {
+  type: "clarification_options";
+  options: { id: string; label: string }[];
+};
+
 export type CircuitPilotEvent =
   | ChatEvent
   | ToolCallStartedEvent
   | ToolCallCompletedEvent
   | FileChangedEvent
   | DRCResultEvent
-  | ApprovalRequiredEvent;
+  | ApprovalRequiredEvent
+  | ClarificationOptionsEvent;
 
 export class CircuitPilotClient {
   private ws: WebSocket;
