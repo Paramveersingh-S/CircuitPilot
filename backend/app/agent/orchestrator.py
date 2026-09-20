@@ -47,31 +47,14 @@ Structure 1 (Clarification):
 Structure 2 (Execution):
 {{
   "status": "READY_TO_EXECUTE",
-  "message": "Writing Atopile code...",
-  "ato_code": "component Resistor:\\n    pin p1\\n    pin p2\\n\\nmodule Blinky:\\n    res1 = new Resistor\\n    res1.p1 ~ res1.p2"
+  "message": "Generating hardware layout...",
+  "components": ["Microcontroller", "VoltageRegulator", "BarrelJack", "Capacitor", "LED", "Resistor"]
 }}
-
-IMPORTANT: Do not wrap `ato_code` in markdown. It must be a raw string safely escaped for JSON.
-
-CRITICAL Atopile Syntax Rules:
-1. DO NOT use `import` statements. You must define all components inline using `component <Name>:`.
-   Example:
-   component LED:
-       pin anode
-       pin cathode
-       footprint = "LED_SMD:LED_0805_2012Metric"
-2. DO NOT use the `property` keyword. Just define variables directly.
-   ILLEGAL: `property pin_count`
-   CORRECT: `pin_count = 40`
-3. DO NOT use array syntax like `pins[6]` or `icsp.pins[1]`. Define explicit pins: `pin p1`, `pin p2`.
-4. You CANNOT pass arguments to `new`. 
-   ILLEGAL: `new DIPSocket(pin_count=40)`
-   CORRECT: `sock = new DIPSocket` then `sock.pin_count = 40`
-5. Values use exact units: `330ohm`, `10uF` (No underscores).
+IMPORTANT: Do not wrap the JSON in markdown blocks. Output raw JSON.
 """
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_text}
+            {"role": "user", "content": prompt}
         ]
         
         try:
