@@ -35,6 +35,15 @@ By leveraging the power of Large Language Models connected natively to the **Ato
 
 ## Architecture
 
+```mermaid
+graph TD
+    A[Frontend Vite/React] -->|WebSocket| B[Backend FastAPI]
+    B --> C{LLM AI Planner}
+    C -->|Extract JSON Components| D[Native Python Router Engine]
+    D -->|45-deg Routing, Multi-layer Vias| E[.kicad_pcb Board Output]
+    E -->|Stream to KiCanvas| A
+```
+
 1. **Frontend (Vite / React)**: Handles user interaction, chat websockets, and displays the generated KiCad board using KiCanvas.
 2. **Backend (FastAPI)**: Manages sessions, Git-backed workspaces, and routes prompts to the LLM.
 3. **Planner Agent (LLM)**: An AI configured with strict compiler rules that synthesizes valid Atopile (`.ato`) hardware code.

@@ -16,7 +16,7 @@ class ClarificationOption(BaseModel):
 class PlanResult(BaseModel):
     status: str # 'CLARIFICATION_REQUIRED' or 'READY_TO_EXECUTE'
     options: List[ClarificationOption] = []
-    ato_code: str = ""
+    components: List[str] = []
     message: str = ""
 
 class Planner:
@@ -25,12 +25,11 @@ class Planner:
         
     async def process(self, user_text: str, context: str) -> PlanResult:
         system_prompt = f"""
-You are the CircuitPilot Planner, an expert PCB designer and Atopile programmer.
+You are the CircuitPilot Planner, an expert PCB designer.
 Context: {context}
 
 If the user's request is ambiguous or underspecified, you MUST ask a clarifying question and provide 2-4 concrete options for them to choose from.
-If the request is fully specified, you MUST output valid Atopile (.ato) code to build the circuit. 
-Assume standard generics are available (e.g., `import Resistor from "generics/resistors.ato"`).
+If the request is fully specified, you MUST extract all the hardware components they want to place on the circuit board into a simple JSON array. 
 
 Respond strictly in JSON format matching one of these two structures:
 
@@ -54,14 +53,13 @@ IMPORTANT: Do not wrap the JSON in markdown blocks. Output raw JSON.
 """
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": prompt}
+            {"role": "user", "content": user_text}
         ]
         
         try:
             response = await self.llm.chat(messages=messages)
             content = response.choices[0].message.content
             
-            # Simple JSON extraction
             start = content.find('{')
             end = content.rfind('}') + 1
             if start != -1 and end != 0:
@@ -78,13 +76,13 @@ IMPORTANT: Do not wrap the JSON in markdown blocks. Output raw JSON.
                     return PlanResult(
                         status="READY_TO_EXECUTE",
                         message=data.get("message", "Executing..."),
-                        ato_code=data.get("ato_code", "")
+                        components=data.get("components", [])
                     )
         except Exception as e:
             import traceback
             err = traceback.format_exc()
             print(f"Planner error: {err}")
-            return PlanResult(status="READY_TO_EXECUTE", message=f"Error generating plan: {str(e)}", subtasks=[])
+            return PlanResult(status="READY_TO_EXECUTE", message=f"Error generating plan: {str(e)}")
 
 class Orchestrator:
     def __init__(self):
@@ -98,7 +96,6 @@ class Orchestrator:
             
         context = session.get("context", {})
         
-        # 1. Process with LLM
         await websocket.send_json({"type": "chat", "role": "assistant", "text": "Thinking..."})
         plan = await self.planner.process(user_text, context=str(context))
         
@@ -110,47 +107,38 @@ class Orchestrator:
                 "options": [o.dict() for o in plan.options]
             })
             
-            # Save history and return, waiting for user response
             history = session.get("history", [])
             history.append({"role": "user", "content": user_text})
             history.append({"role": "assistant", "content": plan.message})
             session_manager.update_session(session_id, context, history)
             return
             
-        # 2. Execute
         from app.projects.store import project_store
-        from app.agent.tools.ato_tools import run_ato_build
+        from app.agent.tools.native_generator import generate_kicad_pcb
         import os
 
-        # Ensure project exists
         project_store.init_project(session_id)
         project_path = project_store.get_project_path(session_id)
         
-        # Write .ato file
-        ato_path = os.path.join(project_path, f"{session_id}.ato")
-        with open(ato_path, "w", encoding="utf-8") as f:
-            f.write(plan.ato_code)
-            
-        await websocket.send_json({"type": "chat", "role": "assistant", "text": "Compiling Atopile code natively..."})
+        await websocket.send_json({"type": "chat", "role": "assistant", "text": "Routing PCB natively with 45-degree multi-layer algorithm..."})
 
-        # Build project natively via Docker!
-        success, logs = run_ato_build(ato_path, project_path)
+        pcb_path = os.path.join(project_path, f"{session_id}.kicad_pcb")
+        success = generate_kicad_pcb(pcb_path, plan.components)
+        
         if not success:
-            await websocket.send_json({"type": "chat", "role": "assistant", "text": f"Build failed:\\n```\\n{logs}\\n```"})
+            await websocket.send_json({"type": "chat", "role": "assistant", "text": f"Build failed: Native Generation Error"})
             return
 
         await websocket.send_json({"type": "chat", "role": "assistant", "text": "Finished executing tasks."})
         
-        # Serve the dynamically generated board
         import time
-        board_url = f"http://localhost:8000/workspaces/{session_id}/build/{session_id}.kicad_pcb?t={int(time.time())}"
+        board_url = f"http://localhost:8000/workspaces/{session_id}/{session_id}.kicad_pcb?t={int(time.time())}"
         await websocket.send_json({
             "type": "file_changed", 
             "path": board_url
         })
         
-        # 3. Update session history
         history = session.get("history", [])
         history.append({"role": "user", "content": user_text})
-        history.append({"role": "assistant", "content": f"Wrote Atopile code and compiled."})
+        history.append({"role": "assistant", "content": f"Generated native layout."})
         session_manager.update_session(session_id, context, history)
