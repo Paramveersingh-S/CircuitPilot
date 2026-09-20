@@ -20,6 +20,11 @@
 
 **CircuitPilot** is an advanced AI agent application that translates natural language prompts into physical Printed Circuit Boards (PCBs). 
 
+<div align="center">
+  <img src="screenshot.png" alt="Expert PCB Layout" width="800"/>
+  <p><em>Example of a generated multi-layer PCB with copper pours, vias, and expert routing.</em></p>
+</div>
+
 By leveraging the power of Large Language Models connected natively to the **Atopile** hardware compiler and the **KiCad** physical routing engine via an isolated Docker environment, CircuitPilot enables users to simply describe a circuit (e.g., *"Design a PIC Microcontroller board with a 12V barrel jack, a 5V TO-220 regulator, and 4 status LEDs"*) and instantly receive a fully valid `.kicad_pcb` file mapped to real physical footprints and topological nets.
 
 ---

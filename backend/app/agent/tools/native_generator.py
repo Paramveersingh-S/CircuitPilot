@@ -169,6 +169,39 @@ def generate_kicad_pcb(target_path: str, components: list[str]) -> bool:
   (gr_line (start {board_w} {board_h}) (end 30 {board_h}) (layer "Edge.Cuts") (width 0.15))
   (gr_line (start 30 {board_h}) (end 30 30) (layer "Edge.Cuts") (width 0.15))
 """
+        holes = f"""
+  (footprint "MountingHole:MountingHole_3.2mm_M3" (at 35 35) (layer "F.Cu")
+    (property "Reference" "H1" (at 35 32 0) (layer "F.SilkS"))
+    (property "Value" "M3" (at 35 38 0) (layer "F.Fab"))
+    (pad "1" np_thru_hole circle (at 0 0) (size 3.2 3.2) (drill 3.2) (layers *.Cu *.Mask))
+  )
+  (footprint "MountingHole:MountingHole_3.2mm_M3" (at {board_w-5} 35) (layer "F.Cu")
+    (property "Reference" "H2" (at {board_w-5} 32 0) (layer "F.SilkS"))
+    (property "Value" "M3" (at {board_w-5} 38 0) (layer "F.Fab"))
+    (pad "1" np_thru_hole circle (at 0 0) (size 3.2 3.2) (drill 3.2) (layers *.Cu *.Mask))
+  )
+  (footprint "MountingHole:MountingHole_3.2mm_M3" (at 35 {board_h-5}) (layer "F.Cu")
+    (property "Reference" "H3" (at 35 {board_h-8} 0) (layer "F.SilkS"))
+    (property "Value" "M3" (at 35 {board_h-2} 0) (layer "F.Fab"))
+    (pad "1" np_thru_hole circle (at 0 0) (size 3.2 3.2) (drill 3.2) (layers *.Cu *.Mask))
+  )
+  (footprint "MountingHole:MountingHole_3.2mm_M3" (at {board_w-5} {board_h-5}) (layer "F.Cu")
+    (property "Reference" "H4" (at {board_w-5} {board_h-8} 0) (layer "F.SilkS"))
+    (property "Value" "M3" (at {board_w-5} {board_h-2} 0) (layer "F.Fab"))
+    (pad "1" np_thru_hole circle (at 0 0) (size 3.2 3.2) (drill 3.2) (layers *.Cu *.Mask))
+  )
+"""
+        zone = f"""
+  (zone (net 0) (net_name "") (layer "B.Cu") (hatch edge 0.5)
+    (connect_pads (clearance 0.5))
+    (min_thickness 0.25)
+    (polygon
+      (pts
+        (xy 30 30) (xy {board_w} 30) (xy {board_w} {board_h}) (xy 30 {board_h})
+      )
+    )
+  )
+"""
         text_labels = f"""
   (gr_text "EXPERT AI ROUTER (45-DEG MULTILAYER)" (at {board_w/2} 25) (layer "F.SilkS")
     (effects (font (size 2 2) (thickness 0.4)))
@@ -180,7 +213,7 @@ def generate_kicad_pcb(target_path: str, components: list[str]) -> bool:
         footer = "\n)"
         
         with open(target_path, "w", encoding="utf-8") as f:
-            f.write(header + outline + text_labels + footprints_str + segments_str + vias_str + footer)
+            f.write(header + outline + holes + text_labels + footprints_str + segments_str + vias_str + zone + footer)
             
         return True
     except Exception as e:
