@@ -1,39 +1,95 @@
-# CircuitPilot
+<div align="center">
+  <img src="logo.jpg" alt="CircuitPilot Logo" width="400"/>
 
-![CircuitPilot Screenshot](file:///C:/Users/Paramveer/.gemini/antigravity-ide/brain/b18b75ad-0be2-47be-86ee-8594d1be00b7/.user_uploaded/media_1789894996804.png)
+  <h1>CircuitPilot</h1>
+  <p><strong>Expert AI-Powered PCB Design Software</strong></p>
 
-CircuitPilot is an **Enterprise-grade, AI-driven PCB Design Copilot**. It allows hardware engineers to rapidly prototype and synthesize physical KiCad boards through natural language interaction.
+  <p>
+    <img src="https://img.shields.io/badge/Frontend-React%20%7C%20Vite-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React" />
+    <img src="https://img.shields.io/badge/Language-TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+    <img src="https://img.shields.io/badge/Backend-Python%20%7C%20FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
+    <img src="https://img.shields.io/badge/Compiler-Atopile-FF6F00?style=for-the-badge&logo=python&logoColor=white" alt="Atopile" />
+    <img src="https://img.shields.io/badge/Engine-KiCad-314CB6?style=for-the-badge&logo=kicad&logoColor=white" alt="KiCad" />
+    <img src="https://img.shields.io/badge/Runtime-Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
+  </p>
+</div>
 
-## ✨ Features
-- **AI-Powered Design:** Uses Groq-powered LLMs to understand complex electrical requirements.
-- **Native PCB Synthesis:** Dynamically generates real, valid `.kicad_pcb` files instantly on the fly without relying on slow or broken third-party compilers.
-- **Interactive UI:** A premium, glassmorphism-inspired dark mode interface that feels responsive and alive.
-- **Real-Time Viewer:** Integrates KiCanvas to render newly generated hardware designs directly in your browser.
+<br />
 
-## 🚀 Getting Started
+## Overview
+
+**CircuitPilot** is an advanced AI agent application that translates natural language prompts into physical Printed Circuit Boards (PCBs). 
+
+By leveraging the power of Large Language Models connected natively to the **Atopile** hardware compiler and the **KiCad** physical routing engine via an isolated Docker environment, CircuitPilot enables users to simply describe a circuit (e.g., *"Design a PIC Microcontroller board with a 12V barrel jack, a 5V TO-220 regulator, and 4 status LEDs"*) and instantly receive a fully valid `.kicad_pcb` file mapped to real physical footprints and topological nets.
+
+---
+
+## Features
+
+- **Prompt-to-PCB**: Seamless natural language synthesis of hardware layouts.
+- **True Hardware Compilation**: Uses Atopile (`.ato`) syntax generation to electrically verify nets, define module constraints, and enforce DRC rules.
+- **Dockerized Environment**: The entire hardware compilation suite (C++ build tools, KiCad, Atopile) runs completely isolated inside a Linux Docker container, bypassing complex Windows installation constraints.
+- **Interactive UI**: A sleek, dark-mode GUI featuring an AI Chat Panel, an Activity Feed, and an embedded KiCanvas interactive PCB viewer.
+
+---
+
+## Architecture
+
+1. **Frontend (Vite / React)**: Handles user interaction, chat websockets, and displays the generated KiCad board using KiCanvas.
+2. **Backend (FastAPI)**: Manages sessions, Git-backed workspaces, and routes prompts to the LLM.
+3. **Planner Agent (LLM)**: An AI configured with strict compiler rules that synthesizes valid Atopile (`.ato`) hardware code.
+4. **Atopile Docker Runner**: The generated `.ato` code is mounted into a Linux container where `ato build` generates the physical footprint placement and netlist export.
+
+---
+
+## Running Instructions
 
 ### Prerequisites
-- Node.js
-- Python 3.11+
 
-### Installation
+- **Node.js** (v18+)
+- **Python** (v3.11+)
+- **Docker Desktop** (Must be running for the hardware compiler to function)
 
-1. **Start the Frontend:**
-```bash
-cd frontend
-npm install
-npm run dev
-```
+### 1. Start the Backend
 
-2. **Start the Backend:**
+The backend manages the AI generation, workspaces, and Docker orchestration.
+
 ```bash
 cd backend
+python -m venv venv311
 .\venv311\Scripts\Activate.ps1
 pip install -r requirements.txt
+
+# Start the FastAPI server
 python -m uvicorn app.main:app --reload --port 8000
 ```
 
-## 🛠️ Architecture
-- **Frontend:** React, TypeScript, Vite, Vanilla CSS
-- **Backend:** FastAPI, Uvicorn, LiteLLM (Groq)
-- **Hardware Integration:** Native Python KiCad Generator, KiCanvas
+### 2. Start the Frontend
+
+The frontend hosts the CircuitPilot UI and KiCanvas integration.
+
+```bash
+cd frontend
+npm install
+
+# Start the Vite development server
+npm run dev
+```
+
+### 3. Build the Hardware Compiler Image
+
+Ensure Docker Desktop is running, then build the isolated compiler image. This image contains KiCad, CMake, and Atopile.
+
+```bash
+cd backend/atopile_docker
+docker build -t atopile-runner .
+```
+
+---
+
+## Usage
+
+1. Navigate to `http://localhost:5173/` in your browser.
+2. Enter a prompt into the Chat Panel describing the board you want to build.
+3. Watch the AI write the Atopile code, and the Docker container compile it natively.
+4. The interactive `.kicad_pcb` board will stream directly into your canvas!

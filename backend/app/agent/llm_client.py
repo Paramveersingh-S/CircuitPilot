@@ -21,7 +21,8 @@ class LLMClient:
                 messages=messages,
                 api_base=api_base,
                 api_key=api_key,
-                temperature=0.0
+                temperature=0.0,
+                max_tokens=8192
             )
             return response
         except Exception as e:

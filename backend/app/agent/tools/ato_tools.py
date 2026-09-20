@@ -1,77 +1,49 @@
-import subprocess
-import json
-from typing import List, Optional
-from pydantic import BaseModel
 import os
+import subprocess
+import re
 
-class PackageMatch(BaseModel):
-    name: str
-    description: str
-    version: str
-
-class BuildResult(BaseModel):
-    success: bool
-    errors: List[str]
-    warnings: List[str]
-
-def ato_search_package(query: str) -> List[PackageMatch]:
-    """Search the local package cache and packages.atopile.io for a reusable
-    .ato module matching the query."""
+def run_ato_build(ato_file_path: str, project_dir: str):
+    """
+    Runs `ato build` inside the atopile-runner Docker container.
+    """
     try:
-        # Assuming atopile CLI has a search command returning JSON, or we mock it for now
-        # result = subprocess.run(["ato", "search", query, "--json"], capture_output=True, text=True)
-        # return [PackageMatch(**m) for m in json.loads(result.stdout)]
+        # We need absolute path for docker volume mount
+        abs_project_dir = os.path.abspath(project_dir)
         
-        # Simplified Mock as atopile search might not be perfectly JSON yet
-        return [PackageMatch(name="mocked_package", description="Found match for " + query, version="1.0.0")]
-    except Exception as e:
-        print(f"ato_search_package error: {e}")
-        return []
-
-def ato_add_module(target_file: str, module_name: str,
-                    package_ref: Optional[str], inline_spec: Optional[str]) -> str:
-    """Add a module instance to an .ato file. Does not trigger a build."""
-    try:
-        content = f"\nmodule {module_name}:\n"
-        if package_ref:
-            content += f"    # from {package_ref}\n"
-        if inline_spec:
-            content += f"    {inline_spec}\n"
+        # Make path relative to project dir for Docker
+        rel_path = os.path.relpath(ato_file_path, abs_project_dir)
+        # Convert Windows backslashes to forward slashes for Linux Docker
+        rel_path = rel_path.replace("\\", "/")
+        
+        # Read the file to find the primary module name
+        with open(ato_file_path, "r", encoding="utf-8") as f:
+            content = f.read()
             
-        with open(target_file, "a") as f:
-            f.write(content)
-        return f"{module_name}"
+        match = re.search(r'module\s+([A-Za-z0-9_]+):', content)
+        if not match:
+            return False, "Error: Could not find a 'module <Name>:' declaration in the generated Atopile code."
+            
+        module_name = match.group(1)
+        
+        # Write the required ato.yaml project configuration file dynamically
+        yaml_path = os.path.join(abs_project_dir, "ato.yaml")
+        with open(yaml_path, "w", encoding="utf-8") as f:
+            f.write(f"ato-version: ^0.2.0\nbuilds:\n  default:\n    entry: {rel_path}:{module_name}\n")
+        
+        cmd = [
+            "docker", "run", "--rm",
+            "-v", f"{abs_project_dir}:/workspace",
+            "atopile-runner",
+            "--non-interactive", "build"
+        ]
+        
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        combined_logs = result.stdout.strip() + "\n" + result.stderr.strip()
+        
+        if result.returncode != 0:
+            print(f"Atopile Build Error:\n{combined_logs}")
+            return False, combined_logs
+            
+        return True, combined_logs
     except Exception as e:
-        print(f"ato_add_module error: {e}")
-        return ""
-
-def ato_set_parameter(target_file: str, module_id: str, param: str, value: float,
-                       unit: str, tolerance: Optional[float]) -> None:
-    """Set/override a parametric value on a module instance."""
-    try:
-        with open(target_file, "a") as f:
-            f.write(f"\n    {module_id}.{param} = {value}{unit}")
-            if tolerance:
-                f.write(f" +/- {tolerance}%")
-    except Exception as e:
-        print(f"ato_set_parameter error: {e}")
-
-def ato_connect(target_file: str, a: str, b: str) -> None:
-    """Connect two pins, interfaces, or nets by name."""
-    try:
-        with open(target_file, "a") as f:
-            f.write(f"\n    {a} ~ {b}")
-    except Exception as e:
-        print(f"ato_connect error: {e}")
-
-def ato_build(target_file: str) -> BuildResult:
-    """Compile .ato sources."""
-    try:
-        result = subprocess.run(["ato", "build", target_file], capture_output=True, text=True)
-        success = result.returncode == 0
-        errors = [line for line in result.stderr.split('\n') if "error" in line.lower()]
-        warnings = [line for line in result.stderr.split('\n') if "warning" in line.lower()]
-        return BuildResult(success=success, errors=errors, warnings=warnings)
-    except Exception as e:
-        print(f"ato_build error: {e}")
-        return BuildResult(success=False, errors=[str(e)], warnings=[])
+        return False, str(e)

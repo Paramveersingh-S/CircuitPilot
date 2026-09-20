@@ -16,7 +16,7 @@ class ClarificationOption(BaseModel):
 class PlanResult(BaseModel):
     status: str # 'CLARIFICATION_REQUIRED' or 'READY_TO_EXECUTE'
     options: List[ClarificationOption] = []
-    subtasks: List[Subtask] = []
+    ato_code: str = ""
     message: str = ""
 
 class Planner:
@@ -25,11 +25,12 @@ class Planner:
         
     async def process(self, user_text: str, context: str) -> PlanResult:
         system_prompt = f"""
-You are the CircuitPilot Planner, an expert PCB designer.
+You are the CircuitPilot Planner, an expert PCB designer and Atopile programmer.
 Context: {context}
 
-If the user's request is ambiguous or underspecified (e.g. they ask for a "buck converter" but don't specify the input/output voltages or current), you MUST ask a clarifying question and provide 2-4 concrete options for them to choose from.
-If the request is fully specified (or they just selected an option), you MUST output a plan to execute the design using the tools: 'ato_search', 'ato_add_module', 'kicad_place_component'.
+If the user's request is ambiguous or underspecified, you MUST ask a clarifying question and provide 2-4 concrete options for them to choose from.
+If the request is fully specified, you MUST output valid Atopile (.ato) code to build the circuit. 
+Assume standard generics are available (e.g., `import Resistor from "generics/resistors.ato"`).
 
 Respond strictly in JSON format matching one of these two structures:
 
@@ -46,14 +47,27 @@ Structure 1 (Clarification):
 Structure 2 (Execution):
 {{
   "status": "READY_TO_EXECUTE",
-  "message": "Designing the circuit...",
-  "subtasks": [
-    {{"agent": "schematic", "action": "ato_search", "args": {{"query": "<EXTRACTED_PART>"}}, "is_destructive": false}},
-    {{"agent": "schematic", "action": "ato_add_module", "args": {{"module": "<EXTRACTED_PART>", "instance_name": "U1"}}, "is_destructive": true}},
-    {{"agent": "layout", "action": "kicad_place_component", "args": {{"component": "<EXTRACTED_PART>"}}, "is_destructive": true}}
-  ]
+  "message": "Writing Atopile code...",
+  "ato_code": "component Resistor:\\n    pin p1\\n    pin p2\\n\\nmodule Blinky:\\n    res1 = new Resistor\\n    res1.p1 ~ res1.p2"
 }}
-IMPORTANT: You MUST replace <EXTRACTED_PART> with the exact component the user requested (e.g. 'ESP32', 'LM386', '555_timer', etc.)! Do not hardcode 'buck' unless they asked for a buck converter.
+
+IMPORTANT: Do not wrap `ato_code` in markdown. It must be a raw string safely escaped for JSON.
+
+CRITICAL Atopile Syntax Rules:
+1. DO NOT use `import` statements. You must define all components inline using `component <Name>:`.
+   Example:
+   component LED:
+       pin anode
+       pin cathode
+       footprint = "LED_SMD:LED_0805_2012Metric"
+2. DO NOT use the `property` keyword. Just define variables directly.
+   ILLEGAL: `property pin_count`
+   CORRECT: `pin_count = 40`
+3. DO NOT use array syntax like `pins[6]` or `icsp.pins[1]`. Define explicit pins: `pin p1`, `pin p2`.
+4. You CANNOT pass arguments to `new`. 
+   ILLEGAL: `new DIPSocket(pin_count=40)`
+   CORRECT: `sock = new DIPSocket` then `sock.pin_count = 40`
+5. Values use exact units: `330ohm`, `10uF` (No underscores).
 """
         messages = [
             {"role": "system", "content": system_prompt},
@@ -81,7 +95,7 @@ IMPORTANT: You MUST replace <EXTRACTED_PART> with the exact component the user r
                     return PlanResult(
                         status="READY_TO_EXECUTE",
                         message=data.get("message", "Executing..."),
-                        subtasks=[Subtask(**t) for t in data.get("subtasks", [])]
+                        ato_code=data.get("ato_code", "")
                     )
         except Exception as e:
             import traceback
@@ -122,44 +136,24 @@ class Orchestrator:
             
         # 2. Execute
         from app.projects.store import project_store
-        from app.agent.tools.native_generator import generate_kicad_pcb
+        from app.agent.tools.ato_tools import run_ato_build
         import os
 
         # Ensure project exists
         project_store.init_project(session_id)
         project_path = project_store.get_project_path(session_id)
-        board_file = os.path.join(project_path, "build", f"{session_id}.kicad_pcb")
         
-        collected_components = []
+        # Write .ato file
+        ato_path = os.path.join(project_path, f"{session_id}.ato")
+        with open(ato_path, "w", encoding="utf-8") as f:
+            f.write(plan.ato_code)
+            
+        await websocket.send_json({"type": "chat", "role": "assistant", "text": "Compiling Atopile code natively..."})
 
-        for subtask in plan.subtasks:
-            msg = f"Executing {subtask.action} via {subtask.agent} agent..."
-            await websocket.send_json({"type": "chat", "role": "assistant", "text": msg})
-            
-            await websocket.send_json({
-                "type": "tool_call_started", 
-                "id": "tc_auto", 
-                "tool": subtask.action,
-                "args": subtask.args
-            })
-            
-            # Real native extraction
-            if subtask.action == "ato_add_module" or subtask.action == "kicad_place_component":
-                comp = subtask.args.get("module", subtask.args.get("component", "UnknownComponent"))
-                if comp not in collected_components:
-                    collected_components.append(comp)
-            
-            await websocket.send_json({
-                "type": "tool_call_completed", 
-                "id": "tc_auto", 
-                "result": {"status": "success"}
-            })
-
-        await websocket.send_json({"type": "chat", "role": "assistant", "text": "Building project..."})
-        
-        # Build project natively!
-        if not generate_kicad_pcb(board_file, collected_components):
-            await websocket.send_json({"type": "chat", "role": "assistant", "text": "Build failed: Native generator crashed."})
+        # Build project natively via Docker!
+        success, logs = run_ato_build(ato_path, project_path)
+        if not success:
+            await websocket.send_json({"type": "chat", "role": "assistant", "text": f"Build failed:\\n```\\n{logs}\\n```"})
             return
 
         await websocket.send_json({"type": "chat", "role": "assistant", "text": "Finished executing tasks."})
@@ -175,5 +169,5 @@ class Orchestrator:
         # 3. Update session history
         history = session.get("history", [])
         history.append({"role": "user", "content": user_text})
-        history.append({"role": "assistant", "content": f"Executed {len(plan.subtasks)} subtasks."})
+        history.append({"role": "assistant", "content": f"Wrote Atopile code and compiled."})
         session_manager.update_session(session_id, context, history)
