@@ -21,7 +21,7 @@ export const ChatPanel: React.FC<{
   };
 
   return (
-    <div className="glass-panel" style={{ width: '380px', display: 'flex', flexDirection: 'column', padding: '1.5rem' }}>
+    <div className="glass-panel" style={{ width: '320px', display: 'flex', flexDirection: 'column', padding: '1.5rem' }}>
       <h2 style={{ fontSize: '1.25rem', fontWeight: 600, letterSpacing: '-0.025em', marginBottom: '1.5rem', color: '#fff' }}>CircuitPilot Assistant</h2>
       
       <div className="chat-history" style={{ flex: 1, overflowY: 'auto', marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', paddingRight: '0.5rem' }}>

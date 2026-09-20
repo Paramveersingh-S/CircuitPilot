@@ -8,7 +8,7 @@ export const ActivityFeed: React.FC<{ events: any[] }> = ({ events }) => {
   }, [events]);
 
   return (
-    <div className="glass-panel" style={{ width: '380px', padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
+    <div className="glass-panel" style={{ width: '260px', padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
       <h2 style={{ fontSize: '1.25rem', fontWeight: 600, letterSpacing: '-0.025em', marginBottom: '1.5rem', color: '#fff' }}>Agent Activity</h2>
       
       <div style={{ flex: 1, overflowY: 'auto', paddingRight: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
