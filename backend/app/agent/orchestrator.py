@@ -48,10 +48,12 @@ Structure 2 (Execution):
   "status": "READY_TO_EXECUTE",
   "message": "Designing the circuit...",
   "subtasks": [
-    {{"agent": "schematic", "action": "ato_search", "args": {{"query": "buck converter"}}, "is_destructive": false}},
-    {{"agent": "schematic", "action": "ato_add_module", "args": {{"module": "buck", "instance_name": "psu"}}, "is_destructive": true}}
+    {{"agent": "schematic", "action": "ato_search", "args": {{"query": "<EXTRACTED_PART>"}}, "is_destructive": false}},
+    {{"agent": "schematic", "action": "ato_add_module", "args": {{"module": "<EXTRACTED_PART>", "instance_name": "U1"}}, "is_destructive": true}},
+    {{"agent": "layout", "action": "kicad_place_component", "args": {{"component": "<EXTRACTED_PART>"}}, "is_destructive": true}}
   ]
 }}
+IMPORTANT: You MUST replace <EXTRACTED_PART> with the exact component the user requested (e.g. 'ESP32', 'LM386', '555_timer', etc.)! Do not hardcode 'buck' unless they asked for a buck converter.
 """
         messages = [
             {"role": "system", "content": system_prompt},
