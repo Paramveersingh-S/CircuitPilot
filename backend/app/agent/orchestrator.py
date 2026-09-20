@@ -16,7 +16,7 @@ class ClarificationOption(BaseModel):
 class PlanResult(BaseModel):
     status: str # 'CLARIFICATION_REQUIRED' or 'READY_TO_EXECUTE'
     options: List[ClarificationOption] = []
-    components: List[str] = []
+    components: dict = {}
     message: str = ""
 
 class Planner:
@@ -29,7 +29,7 @@ You are the CircuitPilot Planner, an expert PCB designer.
 Context: {context}
 
 If the user's request is ambiguous or underspecified, you MUST ask a clarifying question and provide 2-4 concrete options for them to choose from.
-If the request is fully specified, you MUST extract all the hardware components they want to place on the circuit board into a simple JSON array. 
+If the request is fully specified, you MUST extract all the hardware components they want to place on the circuit board into a categorized JSON object. You must classify them into: 'main_ics', 'decoupling_capacitors', 'passives', and 'connectors'. This is critical for PCB design rules.
 
 Respond strictly in JSON format matching one of these two structures:
 
@@ -47,7 +47,12 @@ Structure 2 (Execution):
 {{
   "status": "READY_TO_EXECUTE",
   "message": "Generating hardware layout...",
-  "components": ["Microcontroller", "VoltageRegulator", "BarrelJack", "Capacitor", "LED", "Resistor"]
+  "components": {{
+    "main_ics": ["Microcontroller", "VoltageRegulator"],
+    "decoupling_capacitors": ["100nF Cap", "10uF Cap"],
+    "passives": ["LED", "Resistor"],
+    "connectors": ["BarrelJack", "Header"]
+  }}
 }}
 IMPORTANT: Do not wrap the JSON in markdown blocks. Output raw JSON.
 """
@@ -76,7 +81,7 @@ IMPORTANT: Do not wrap the JSON in markdown blocks. Output raw JSON.
                     return PlanResult(
                         status="READY_TO_EXECUTE",
                         message=data.get("message", "Executing..."),
-                        components=data.get("components", [])
+                        components=data.get("components", {})
                     )
         except Exception as e:
             import traceback

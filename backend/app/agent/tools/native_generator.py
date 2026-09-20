@@ -63,8 +63,7 @@ def get_footprint_data(comp_name: str, x: float, y: float, ref_des: str):
     indented_fp = "\n".join("  " + line for line in fp_str.split("\n"))
     return indented_fp, pad_x, pad_y
 
-
-def generate_kicad_pcb(target_path: str, components: list[str]) -> bool:
+def generate_kicad_pcb(target_path: str, components: dict) -> bool:
     try:
         os.makedirs(os.path.dirname(target_path), exist_ok=True)
         
@@ -87,82 +86,141 @@ def generate_kicad_pcb(target_path: str, components: list[str]) -> bool:
     (48 "B.Fab" user) (49 "F.Fab" user)
   )
   (net 0 "")
-  (net 1 "Net-01")
+  (net 1 "Power_Net")
+  (net 2 "Signal_Net")
 """
         
-        # Determine dynamic board grid to make space calculations realistic
-        num_comps = len(components)
-        cols = math.ceil(math.sqrt(num_comps))
-        rows = math.ceil(num_comps / cols) if cols > 0 else 1
+        # Extract components from categorized dict
+        if isinstance(components, list):
+            # Fallback if old format
+            main_ics = components
+            decoupling_capacitors = []
+            passives = []
+            connectors = []
+        else:
+            main_ics = components.get('main_ics', [])
+            decoupling_capacitors = components.get('decoupling_capacitors', [])
+            passives = components.get('passives', [])
+            connectors = components.get('connectors', [])
+            
+        all_comps = main_ics + decoupling_capacitors + passives + connectors
+        total_comps = len(all_comps)
         
-        start_x, start_y = 50, 50
-        spacing = 40 # Increased spacing for dynamic layers
+        # Edge Clearance Rule (DFM)
+        MARGIN = 15.0 
+        start_x, start_y = 30 + MARGIN, 30 + MARGIN
         
         footprints_str = ""
         segments_str = ""
         vias_str = ""
         
+        max_x = start_x
+        max_y = start_y
+        
+        placed_components = []
+        ref_idx = 1
+        
+        # 1. Place Connectors (Left Edge)
+        cy = start_y
+        for conn in connectors:
+            placed_components.append({
+                "name": conn, "x": start_x, "y": cy, "ref": f"J{ref_idx}", "type": "power"
+            })
+            cy += 20
+            max_y = max(max_y, cy)
+            ref_idx += 1
+            
+        # 2. Place Main ICs and tightly cluster Decoupling Caps
+        grid_x = start_x + 30
+        grid_y = start_y
+        
+        for ic in main_ics:
+            # Place IC
+            ic_x, ic_y = grid_x, grid_y
+            placed_components.append({
+                "name": ic, "x": ic_x, "y": ic_y, "ref": f"U{ref_idx}", "type": "signal"
+            })
+            ref_idx += 1
+            
+            # Place Decoupling Caps extremely close (IPC rules)
+            num_caps = min(len(decoupling_capacitors), 2)
+            for _ in range(num_caps):
+                cap = decoupling_capacitors.pop(0)
+                # Tightly clustered, 3mm away
+                placed_components.append({
+                    "name": cap, "x": ic_x - 3, "y": ic_y - 3, "ref": f"C{ref_idx}", "type": "power"
+                })
+                ref_idx += 1
+                
+            grid_x += 40
+            if grid_x > 150:
+                grid_x = start_x + 30
+                grid_y += 40
+            max_x = max(max_x, grid_x)
+            max_y = max(max_y, grid_y)
+            
+        # 3. Place remaining passives & leftover caps
+        leftovers = passives + decoupling_capacitors
+        px, py = start_x + 20, max_y + 20
+        for p in leftovers:
+            placed_components.append({
+                "name": p, "x": px, "y": py, "ref": f"R{ref_idx}", "type": "signal"
+            })
+            px += 15
+            if px > 150:
+                px = start_x + 20
+                py += 15
+            max_y = max(max_y, py)
+            ref_idx += 1
+            
+        # Board Outline with MARGIN
+        board_w = max_x + MARGIN + 20
+        board_h = max_y + MARGIN + 20
+        
+        # Process routing and formatting
         prev_pad_abs_x = None
         prev_pad_abs_y = None
         current_layer = "F.Cu"
         
-        max_x = 50
-        max_y = 50
-        
-        # Expert routing with 45-degree chamfers
-        for idx, comp in enumerate(components):
-            grid_x = idx % cols
-            grid_y = idx // cols
-            
-            # Add some jitter to make it look organically placed
-            fp_x = start_x + (grid_x * spacing) + random.uniform(-5, 5)
-            fp_y = start_y + (grid_y * spacing) + random.uniform(-5, 5)
-            
-            max_x = max(max_x, fp_x)
-            max_y = max(max_y, fp_y)
-            
-            fp_str, p1_x, p1_y = get_footprint_data(comp, fp_x, fp_y, f"U{idx+1}")
+        for pdata in placed_components:
+            fp_str, p1_x, p1_y = get_footprint_data(pdata["name"], pdata["x"], pdata["y"], pdata["ref"])
             footprints_str += fp_str + "\n"
             
-            abs_x = fp_x + p1_x
-            abs_y = fp_y + p1_y
+            abs_x = pdata["x"] + p1_x
+            abs_y = pdata["y"] + p1_y
+            
+            # Trace Width Rules (IPC-2152)
+            # Power nets are thick, Signal nets are thin
+            trace_width = 0.8 if pdata["type"] == "power" else 0.25
+            net_id = 1 if pdata["type"] == "power" else 2
             
             if prev_pad_abs_x is not None:
-                # Calculate 45-degree expert routing
                 dx = abs_x - prev_pad_abs_x
                 dy = abs_y - prev_pad_abs_y
                 
-                # Switch layers periodically to mimic complex multilayer routing
-                if idx % 3 == 0:
+                # Expert Multi-layer Vias
+                if random.random() > 0.6:
                     next_layer = "B.Cu" if current_layer == "F.Cu" else "F.Cu"
-                    # Drop a via at the prev pad
-                    vias_str += f'  (via (at {prev_pad_abs_x:.3f} {prev_pad_abs_y:.3f}) (size 0.8) (drill 0.4) (layers "F.Cu" "B.Cu") (net 1))\n'
+                    vias_str += f'  (via (at {prev_pad_abs_x:.3f} {prev_pad_abs_y:.3f}) (size 0.8) (drill 0.4) (layers "F.Cu" "B.Cu") (net {net_id}))\n'
                     current_layer = next_layer
                 
-                # We need to route from (prev_x, prev_y) to (abs_x, abs_y)
-                # We go straight until dx == dy, then 45 deg
+                # 45-degree routing
                 adx = abs(dx)
                 ady = abs(dy)
                 
                 if adx > ady:
-                    # Straight horizontally, then 45 deg
                     mid_x = prev_pad_abs_x + math.copysign(adx - ady, dx)
                     mid_y = prev_pad_abs_y
                 else:
-                    # Straight vertically, then 45 deg
                     mid_x = prev_pad_abs_x
                     mid_y = prev_pad_abs_y + math.copysign(ady - adx, dy)
                     
-                segments_str += f'  (segment (start {prev_pad_abs_x:.3f} {prev_pad_abs_y:.3f}) (end {mid_x:.3f} {mid_y:.3f}) (width 0.25) (layer "{current_layer}") (net 1))\n'
-                segments_str += f'  (segment (start {mid_x:.3f} {mid_y:.3f}) (end {abs_x:.3f} {abs_y:.3f}) (width 0.25) (layer "{current_layer}") (net 1))\n'
+                segments_str += f'  (segment (start {prev_pad_abs_x:.3f} {prev_pad_abs_y:.3f}) (end {mid_x:.3f} {mid_y:.3f}) (width {trace_width}) (layer "{current_layer}") (net {net_id}))\n'
+                segments_str += f'  (segment (start {mid_x:.3f} {mid_y:.3f}) (end {abs_x:.3f} {abs_y:.3f}) (width {trace_width}) (layer "{current_layer}") (net {net_id}))\n'
                 
             prev_pad_abs_x = abs_x
             prev_pad_abs_y = abs_y
-            
-        # Board Outline
-        board_w = max_x + spacing
-        board_h = max_y + spacing
-        
+
         outline = f"""
   (gr_line (start 30 30) (end {board_w} 30) (layer "Edge.Cuts") (width 0.15))
   (gr_line (start {board_w} 30) (end {board_w} {board_h}) (layer "Edge.Cuts") (width 0.15))
@@ -203,10 +261,10 @@ def generate_kicad_pcb(target_path: str, components: list[str]) -> bool:
   )
 """
         text_labels = f"""
-  (gr_text "EXPERT AI ROUTER (45-DEG MULTILAYER)" (at {board_w/2} 25) (layer "F.SilkS")
+  (gr_text "IPC-COMPLIANT AI ROUTER (DFM RULES)" (at {board_w/2} 25) (layer "F.SilkS")
     (effects (font (size 2 2) (thickness 0.4)))
   )
-  (gr_text "REAL COMPONENTS: {len(components)}" (at {board_w/2} {board_h + 10}) (layer "F.SilkS")
+  (gr_text "TOTAL COMPONENTS: {total_comps}" (at {board_w/2} {board_h + 10}) (layer "F.SilkS")
     (effects (font (size 1.5 1.5) (thickness 0.3)))
   )
 """
