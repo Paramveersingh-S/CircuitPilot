@@ -424,7 +424,7 @@ def generate_kicad_pcb(target_path: str, components_dict) -> bool:
   (zone (net 0) (net_name "") (layer "B.Cu") (hatch edge 0.5)
     (connect_pads (clearance 0.5))
     (min_thickness 0.25)
-    (fill yes (mode solid))
+    (fill yes)
     (polygon (pts
       (xy 25 25) (xy {board_w} 25) (xy {board_w} {board_h}) (xy 25 {board_h})
     ))
