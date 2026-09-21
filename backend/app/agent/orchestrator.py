@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from typing import List, Optional, Dict
 import json
 from .llm_client import LLMClient
+from app.db import get_circuit_memory, save_circuit, create_session as db_create_session
 
 class ClarificationOption(BaseModel):
     id: str
@@ -85,10 +86,21 @@ class Planner:
     def __init__(self):
         self.llm = LLMClient()
 
-    async def process(self, user_text: str, context: str) -> PlanResult:
+    async def process(self, user_text: str, context: str, memory: list = []) -> PlanResult:
+        # Build memory context block for Phase B
+        memory_block = ""
+        if memory:
+            memory_block = "\n\nPrevious circuits you built for this user (use as context):\n"
+            for i, m in enumerate(memory, 1):
+                comps_summary = ", ".join(
+                    f"{k}: {len(v)}" for k, v in m.get("components", {}).items() if isinstance(v, list)
+                )
+                memory_block += f"{i}. Prompt: \"{m['prompt']}\" → {comps_summary}\n"
+            memory_block += "\nUse this to understand user preferences and improve your component selection.\n"
+
         system_prompt = f"""\
 You are the CircuitPilot Planner, an expert PCB designer.
-Context: {context}
+Context: {context}{memory_block}
 
 If the user's request is ambiguous or underspecified, ask a clarifying question with 2-4 options.
 If fully specified, extract all components into a categorized JSON object with keys:
@@ -161,9 +173,12 @@ class Orchestrator:
 
         context = session.get("context", {})
 
-        # ── Step 1: Plan ────────────────────────────────────────────────────
+        # ── Step 1: Load circuit memory (Phase B) ──────────────────────────
+        memory = get_circuit_memory(session_id, limit=3)
+
+        # ── Step 2: Plan ────────────────────────────────────────────────────
         await websocket.send_json({"type": "chat", "role": "assistant", "text": "Thinking..."})
-        plan = await self.planner.process(user_text, context=str(context))
+        plan = await self.planner.process(user_text, context=str(context), memory=memory)
         await websocket.send_json({"type": "chat", "role": "assistant", "text": plan.message})
 
         if plan.status == "CLARIFICATION_REQUIRED":
@@ -220,6 +235,9 @@ class Orchestrator:
             return
 
         await websocket.send_json({"type": "chat", "role": "assistant", "text": "Board generated successfully!"})
+
+        # ── Save to circuit memory DB (Phase B) ────────────────────────────
+        save_circuit(session_id, user_text, verified_components, pcb_path)
 
         import time
         board_url = f"http://localhost:8000/workspaces/{session_id}/{session_id}.kicad_pcb?t={int(time.time())}"

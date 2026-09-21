@@ -9,10 +9,17 @@ from fastapi.staticfiles import StaticFiles
 
 from app.agent.orchestrator import Orchestrator
 from app.agent.session import SessionManager
+from app.db import init_db
 
 load_dotenv()
 
 app = FastAPI(title="CircuitPilot Backend")
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize SQLite database on startup."""
+    init_db()
+    print("[CircuitPilot] SQLite database initialized.")
 
 app.add_middleware(
     CORSMiddleware,
