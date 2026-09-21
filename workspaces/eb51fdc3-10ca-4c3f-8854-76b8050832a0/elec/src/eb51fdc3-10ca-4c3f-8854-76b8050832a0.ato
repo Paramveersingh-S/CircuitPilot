@@ -1,4 +1,0 @@
-module eb51fdc3-10ca-4c3f-8854-76b8050832a0:
-
-module psu_24v_to_5v:
-    from buck
