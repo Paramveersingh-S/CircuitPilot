@@ -1,15 +1,15 @@
 <div align="center">
-  <img src="logo.jpg" alt="CircuitPilot Logo" width="400"/>
+  <img src="logo.jpg" alt="CircuitPilot Logo" width="160" style="border-radius: 24px;"/>
 
   <h1>CircuitPilot</h1>
-  <p><strong>Expert AI-Powered PCB Design Software</strong></p>
+  <p><strong>Expert AI-Powered PCB Design · From Prompt to Physical Board</strong></p>
 
   <p>
     <img src="https://img.shields.io/badge/Frontend-React%20%7C%20Vite-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React" />
     <img src="https://img.shields.io/badge/Language-TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
     <img src="https://img.shields.io/badge/Backend-Python%20%7C%20FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
-    <img src="https://img.shields.io/badge/Compiler-Atopile-FF6F00?style=for-the-badge&logo=python&logoColor=white" alt="Atopile" />
-    <img src="https://img.shields.io/badge/Engine-KiCad-314CB6?style=for-the-badge&logo=kicad&logoColor=white" alt="KiCad" />
+    <img src="https://img.shields.io/badge/AI-LiteLLM%20%7C%20Multi--Provider-FF6F00?style=for-the-badge&logo=openai&logoColor=white" alt="LiteLLM" />
+    <img src="https://img.shields.io/badge/Engine-KiCad%20%7C%20Native%20Router-314CB6?style=for-the-badge&logo=kicad&logoColor=white" alt="KiCad" />
     <img src="https://img.shields.io/badge/Runtime-Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
   </p>
 </div>
@@ -18,44 +18,90 @@
 
 ## Overview
 
-**CircuitPilot** is an advanced AI agent application that translates natural language prompts into physical Printed Circuit Boards (PCBs). 
+**CircuitPilot** is an AI agent that translates natural language into production-ready KiCad PCB layouts using a multi-stage pipeline: an LLM Planner, an IPC-rules Critic for self-verification, and a Force-Directed physics router that generates expert-quality boards with 45-degree multi-layer trace routing.
 
-### Working Proofs (AI-Generated Boards)
+### Application
+
 <div align="center">
-  <img src="proof_1.png" alt="FPGA High-Frequency Node" width="400"/>
-  <img src="proof_2.png" alt="Multi-Layer Mesh Gateway" width="400"/>
-  <img src="proof_3.png" alt="Audio Synthesizer Hub" width="400"/>
-  <p><em>Examples of dynamic 45-degree routing, ground pours, and IPC clustering rules generated purely from AI prompts.</em></p>
+  <img src="app_screenshot.png" alt="CircuitPilot Application Interface" width="860"/>
+  <p><em>CircuitPilot UI — AI Chat, IPC Critic verification, real-time KiCanvas board viewer with zoom/pan controls.</em></p>
 </div>
 
-By leveraging the power of Large Language Models connected natively to the **Atopile** hardware compiler and our custom **Native KiCad Routing Engine**, CircuitPilot enables users to simply describe a circuit (e.g., *"Design a PIC Microcontroller board with a 12V barrel jack, a 5V TO-220 regulator, and 4 status LEDs"*) and instantly receive a fully valid `.kicad_pcb` file mapped to real physical footprints and topological nets.
+### PCB Output Example (KiCad Desktop)
+
+<div align="center">
+  <img src="pcb_output.png" alt="Force-Directed AI Generated PCB Output" width="860"/>
+  <p><em>AI-generated PCB opened in KiCad — Force-Directed Net-Aware routing with 45-degree chamfers, multi-layer vias, copper ground pour, and M3 mounting holes. Generated entirely from a single text prompt.</em></p>
+</div>
+
+---
+
+## How It Works
+
+```mermaid
+flowchart TD
+    U(["User Prompt\n(Natural Language)"]):::user
+    U --> P
+
+    subgraph AI_PIPELINE ["AI Pipeline (3-Stage)"]
+        direction TB
+        P["Planner LLM\nExtracts categorized\ncomponent list"]:::llm
+        P -->|"JSON: main_ics, decoupling_caps,\npassives, connectors"| C
+        C["Critic LLM\nSelf-verification pass\nEnforces IPC rules"]:::critic
+        C -->|"Corrected + IPC-compliant\ncomponent manifest"| R
+    end
+
+    subgraph ROUTER ["Native Python Router Engine"]
+        direction TB
+        R["Force-Directed\nPlacement Simulation\n(Physics-based clustering)"]:::engine
+        R --> N["Net-Aware Ratsnest\nRouting\n(Shortest-first, per net)"]:::engine
+        N --> T["45° Chamfered\nTrace Generator\nIPC-2152 width rules"]:::engine
+        T --> G["KiCad PCB Builder\nMounting holes · GND pour\nMulti-layer vias"]:::engine
+    end
+
+    G -->|".kicad_pcb file"| WS
+    WS["WebSocket Stream\nFastAPI Backend"]:::server --> KV
+    KV["KiCanvas Viewer\nZoom · Pan · Download\nIn-browser PCB viewer"]:::frontend
+
+    KV --> KD["KiCad Desktop\nFull DRC · 3D View\nGerber Export"]:::kicad
+
+    classDef user fill:#6366f1,stroke:#4f46e5,color:#fff
+    classDef llm fill:#0ea5e9,stroke:#0284c7,color:#fff
+    classDef critic fill:#f59e0b,stroke:#d97706,color:#fff
+    classDef engine fill:#10b981,stroke:#059669,color:#fff
+    classDef server fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    classDef frontend fill:#334155,stroke:#475569,color:#fff
+    classDef kicad fill:#1e40af,stroke:#1d4ed8,color:#fff
+```
 
 ---
 
 ## Features
 
-- **Prompt-to-PCB**: Seamless natural language synthesis of hardware layouts.
-- **True Hardware Compilation**: Uses Atopile (`.ato`) syntax generation to electrically verify nets, define module constraints, and enforce DRC rules.
-- **Dockerized Environment**: The entire hardware compilation suite (C++ build tools, KiCad, Atopile) runs completely isolated inside a Linux Docker container, bypassing complex Windows installation constraints.
-- **Interactive UI**: A sleek, dark-mode GUI featuring an AI Chat Panel, an Activity Feed, and an embedded KiCanvas interactive PCB viewer.
+- **Prompt-to-PCB in seconds**: Describe any circuit in plain English, get a physical board
+- **LLM Self-Verification (Critic)**: A second AI pass enforces IPC design rules before routing — adds missing decoupling caps, crystal oscillators, resistors for LEDs automatically
+- **Force-Directed Physics Placement**: Components cluster organically by electrical connectivity, not rigid grids
+- **Net-Aware Ratsnest Routing**: Routes shortest connections first per net, like a real EDA tool
+- **IPC-2152 Trace Widths**: Power nets routed at 0.8mm, signal nets at 0.25mm automatically
+- **Multi-Layer Routing**: Automatically switches between F.Cu and B.Cu with drill vias
+- **DFM Edge Clearances**: 15mm margins enforced from board edge (fabrication safe)
+- **Provider-Agnostic AI**: Switch between OpenAI, Gemini, Anthropic, or local Ollama via `.env`
+- **Interactive KiCanvas Viewer**: Zoom, pan, and inspect the board before downloading
 
 ---
 
 ## Architecture
 
-```mermaid
-graph TD
-    A[Frontend Vite/React] -->|WebSocket| B[Backend FastAPI]
-    B --> C{LLM AI Planner}
-    C -->|Extract JSON Components| D[Native Python Router Engine]
-    D -->|45-deg Routing, Multi-layer Vias| E[.kicad_pcb Board Output]
-    E -->|Stream to KiCanvas| A
-```
+### Tech Stack
 
-1. **Frontend (Vite / React)**: Handles user interaction, chat websockets, and displays the generated KiCad board using KiCanvas.
-2. **Backend (FastAPI)**: Manages sessions, Git-backed workspaces, and routes prompts to the LLM.
-3. **Planner Agent (LLM)**: An AI configured with strict compiler rules that synthesizes valid Atopile (`.ato`) hardware code.
-4. **Atopile Docker Runner**: The generated `.ato` code is mounted into a Linux container where `ato build` generates the physical footprint placement and netlist export.
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18, Vite, TypeScript, KiCanvas |
+| Backend | Python 3.11, FastAPI, WebSockets |
+| AI Layer | LiteLLM (OpenAI / Gemini / Anthropic / Ollama) |
+| PCB Router | Custom Native Python Engine (Force-Directed + Net-Aware) |
+| Containerization | Docker, Docker Compose |
+| PCB Format | KiCad 10 `.kicad_pcb` |
 
 ---
 
@@ -65,48 +111,50 @@ graph TD
 
 - **Node.js** (v18+)
 - **Python** (v3.11+)
-- **Docker Desktop** (Must be running for the hardware compiler to function)
+- **Docker Desktop** (running for containerized services)
+- An LLM API key (OpenAI, Gemini, or local Ollama)
 
-### 1. Start the Backend
+### 1. Configure Environment
 
-The backend manages the AI generation, workspaces, and Docker orchestration.
+```bash
+cd backend
+cp .env.example .env
+# Edit .env:
+# OPENAI_API_KEY=your_key
+# LLM_MODEL=openai/gpt-4o          # or gemini/gemini-2.0-flash
+# OPENAI_API_BASE=http://localhost:11434  # for Ollama
+```
+
+### 2. Start the Backend
 
 ```bash
 cd backend
 python -m venv venv311
-.\venv311\Scripts\Activate.ps1
+.\venv311\Scripts\Activate.ps1   # Windows
 pip install -r requirements.txt
-
-# Start the FastAPI server
 python -m uvicorn app.main:app --reload --port 8000
 ```
 
-### 2. Start the Frontend
-
-The frontend hosts the CircuitPilot UI and KiCanvas integration.
+### 3. Start the Frontend
 
 ```bash
 cd frontend
 npm install
-
-# Start the Vite development server
 npm run dev
 ```
 
-### 3. Build the Hardware Compiler Image
-
-Ensure Docker Desktop is running, then build the isolated compiler image. This image contains KiCad, CMake, and Atopile.
+### 4. Docker (Full Stack)
 
 ```bash
-cd backend/atopile_docker
-docker build -t atopile-runner .
+docker compose up --build
 ```
 
 ---
 
 ## Usage
 
-1. Navigate to `http://localhost:5173/` in your browser.
-2. Enter a prompt into the Chat Panel describing the board you want to build.
-3. Watch the AI write the Atopile code, and the Docker container compile it natively.
-4. The interactive `.kicad_pcb` board will stream directly into your canvas!
+1. Navigate to `http://localhost:5173/`
+2. Describe your circuit in the Chat Panel
+3. Watch: **Planner** extracts components → **Critic** verifies IPC rules → **Router** generates the board
+4. Use **Scroll** to zoom and **Right-click drag** to pan the board in the browser
+5. Download the `.kicad_pcb` file and open in KiCad Desktop for full DRC + 3D view + Gerber export
