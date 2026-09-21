@@ -268,30 +268,49 @@ def generate_kicad_pcb(target_path: str, components_dict) -> bool:
             passives   = components_dict.get('passives', [])
             connectors = components_dict.get('connectors', [])
 
-        # ── 1. Create Component Objects with random initial scatter ────────────
-        BOARD_W, BOARD_H, MARGIN = 200.0, 160.0, 20.0
+        # ── 1. Dynamically size board from component count ─────────────────────
+        total = len(main_ics) + len(decoupling) + len(passives) + len(connectors)
+        # Each component needs roughly 18x18mm of space; maintain 4:3 aspect ratio
+        area   = max(total * 18 * 18, 100 * 80)   # minimum 100x80mm
+        BOARD_W = round(math.sqrt(area * (4/3)), 1)
+        BOARD_H = round(math.sqrt(area * (3/4)), 1)
+        MARGIN  = 18.0   # DFM edge clearance
+
         comps: List[Component] = []
         idx = 0
         ref_counters = {"U": 1, "J": 1, "C": 1, "R": 1}
 
+        # Connectors start on left strip
         for name in connectors:
             ref = f"J{ref_counters['J']}"; ref_counters['J'] += 1
-            comps.append(Component(idx, name, random.uniform(MARGIN, MARGIN+20), random.uniform(MARGIN, BOARD_H-MARGIN), "connector", ref))
+            comps.append(Component(idx, name,
+                random.uniform(MARGIN, MARGIN + 15),
+                random.uniform(MARGIN, BOARD_H - MARGIN),
+                "connector", ref))
             idx += 1
 
         for name in main_ics:
             ref = f"U{ref_counters['U']}"; ref_counters['U'] += 1
-            comps.append(Component(idx, name, random.uniform(40, BOARD_W-40), random.uniform(40, BOARD_H-40), "ic", ref))
+            comps.append(Component(idx, name,
+                random.uniform(MARGIN + 20, BOARD_W - MARGIN - 20),
+                random.uniform(MARGIN + 20, BOARD_H - MARGIN - 20),
+                "ic", ref))
             idx += 1
 
         for name in decoupling:
             ref = f"C{ref_counters['C']}"; ref_counters['C'] += 1
-            comps.append(Component(idx, name, random.uniform(MARGIN, BOARD_W-MARGIN), random.uniform(MARGIN, BOARD_H-MARGIN), "decoupling", ref))
+            comps.append(Component(idx, name,
+                random.uniform(MARGIN, BOARD_W - MARGIN),
+                random.uniform(MARGIN, BOARD_H - MARGIN),
+                "decoupling", ref))
             idx += 1
 
         for name in passives:
             ref = f"R{ref_counters['R']}"; ref_counters['R'] += 1
-            comps.append(Component(idx, name, random.uniform(MARGIN, BOARD_W-MARGIN), random.uniform(MARGIN, BOARD_H-MARGIN), "passive", ref))
+            comps.append(Component(idx, name,
+                random.uniform(MARGIN, BOARD_W - MARGIN),
+                random.uniform(MARGIN, BOARD_H - MARGIN),
+                "passive", ref))
             idx += 1
 
         if not comps:
@@ -321,7 +340,32 @@ def generate_kicad_pcb(target_path: str, components_dict) -> bool:
             nets_for_sim.append((ic_indices[i], ic_indices[i+1]))
 
         # ── 3. Run force-directed simulation ──────────────────────────────────
-        comps = force_directed_placement(comps, nets_for_sim, BOARD_W, BOARD_H, MARGIN, iterations=400)
+        comps = force_directed_placement(
+            comps, nets_for_sim, BOARD_W, BOARD_H, MARGIN, iterations=400
+        )
+
+        # ── 4. Normalise positions — guarantee all fit inside board outline ────
+        # Find actual bounding box of placed components
+        xs = [c.x for c in comps]
+        ys = [c.y for c in comps]
+        min_x, max_x = min(xs), max(xs)
+        min_y, max_y = min(ys), max(ys)
+        span_x = max(max_x - min_x, 1)
+        span_y = max(max_y - min_y, 1)
+
+        # Available canvas inside margins
+        avail_x = BOARD_W - 2 * MARGIN
+        avail_y = BOARD_H - 2 * MARGIN
+
+        # Scale factor — shrink if components overflow, don't enlarge
+        scale = min(avail_x / span_x, avail_y / span_y, 1.0)
+
+        for c in comps:
+            c.x = MARGIN + (c.x - min_x) * scale
+            c.y = MARGIN + (c.y - min_y) * scale
+            # Hard clamp for safety
+            c.x = max(MARGIN, min(BOARD_W - MARGIN, c.x))
+            c.y = max(MARGIN, min(BOARD_H - MARGIN, c.y))
 
         # ── 4. Build ratsnest and route ────────────────────────────────────────
         connections = build_ratsnest(comps)
