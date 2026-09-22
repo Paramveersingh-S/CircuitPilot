@@ -12,13 +12,24 @@
     <img src="https://img.shields.io/badge/Engine-KiCad%20%7C%20Native%20Router-314CB6?style=for-the-badge&logo=kicad&logoColor=white" alt="KiCad" />
     <img src="https://img.shields.io/badge/Runtime-Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
   </p>
+  
+  <p>
+    <a href="https://github.com/Paramveersingh-S/CircuitPilot/stargazers"><img src="https://img.shields.io/github/stars/Paramveersingh-S/CircuitPilot?style=social" alt="Stars Badge"/></a>
+    <a href="https://github.com/Paramveersingh-S/CircuitPilot/fork"><img src="https://img.shields.io/github/forks/Paramveersingh-S/CircuitPilot?style=social" alt="Forks Badge"/></a>
+    <a href="https://github.com/Paramveersingh-S/CircuitPilot/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Paramveersingh-S/CircuitPilot?style=flat-square" alt="License Badge"/></a>
+    <a href="https://x.com/ParamveerS15896"><img src="https://img.shields.io/badge/Twitter-Follow-1DA1F2?logo=twitter&style=flat-square" alt="Twitter"/></a>
+  </p>
 </div>
 
 <br />
 
 ## Overview
 
-**CircuitPilot** is an AI agent that translates natural language into production-ready KiCad PCB layouts using a multi-stage pipeline: an LLM Planner, an IPC-rules Critic for self-verification, and a Force-Directed physics router that generates expert-quality boards with 45-degree multi-layer trace routing.
+**Stop manually placing components for simple IoT boards. Let physics and AI do it in seconds.**
+
+**CircuitPilot** is an open-source AI agent that translates natural language into production-ready KiCad PCB layouts using a multi-stage pipeline. Unlike wrappers that just output text, CircuitPilot includes a custom built **Force-Directed Physics Router** to generate expert-quality boards with 45-degree multi-layer trace routing.
+
+👉 **[Read the Deep Dive: How the Force-Directed Physics Router Works](ARCHITECTURE.md)**
 
 ### Application
 
@@ -105,14 +116,28 @@ flowchart TD
 
 ---
 
-## Running Instructions
+## Quick Start (Zero Friction)
+
+The easiest way to run CircuitPilot is via Docker. You just need an LLM API key (OpenAI, Gemini, Anthropic, etc).
+
+```bash
+git clone https://github.com/Paramveersingh-S/CircuitPilot.git
+cd CircuitPilot/backend
+cp .env.example .env 
+# Add your OPENAI_API_KEY to .env, then run:
+cd .. && docker-compose up --build
+```
+Then open `http://localhost:5173` in your browser!
+
+---
+
+## Local Development Setup
 
 ### Prerequisites
 
 - **Node.js** (v18+)
 - **Python** (v3.11+)
-- **Docker Desktop** (running for containerized services)
-- An LLM API key (OpenAI, Gemini, or local Ollama)
+- An LLM API key
 
 ### 1. Configure Environment
 
