@@ -28,11 +28,17 @@ def init_db():
         conn.execute("""
             CREATE TABLE IF NOT EXISTS sessions (
                 session_id   TEXT PRIMARY KEY,
+                user_id      TEXT,
                 created_at   TEXT NOT NULL,
                 updated_at   TEXT NOT NULL,
                 context_json TEXT NOT NULL DEFAULT '{}'
             )
         """)
+        # Safe migration for existing databases
+        try:
+            conn.execute("ALTER TABLE sessions ADD COLUMN user_id TEXT")
+        except sqlite3.OperationalError:
+            pass
         conn.execute("""
             CREATE TABLE IF NOT EXISTS circuit_history (
                 id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -59,13 +65,13 @@ def init_db():
 
 # ─── Session CRUD ──────────────────────────────────────────────────────────────
 
-def create_session(session_id: Optional[str] = None) -> str:
+def create_session(session_id: Optional[str] = None, user_id: Optional[str] = None) -> str:
     sid = session_id or str(uuid.uuid4())
     now = datetime.utcnow().isoformat()
     with _get_conn() as conn:
         conn.execute(
-            "INSERT OR IGNORE INTO sessions (session_id, created_at, updated_at, context_json) VALUES (?,?,?,?)",
-            (sid, now, now, "{}")
+            "INSERT OR IGNORE INTO sessions (session_id, user_id, created_at, updated_at, context_json) VALUES (?,?,?,?,?)",
+            (sid, user_id, now, now, "{}")
         )
         conn.commit()
     return sid
@@ -84,6 +90,7 @@ def get_session(session_id: str) -> Optional[Dict[str, Any]]:
         ).fetchall()
         return {
             "session_id": row["session_id"],
+            "user_id": row["user_id"],
             "context": json.loads(row["context_json"]),
             "history": [{"role": r["role"], "content": r["content"]} for r in history]
         }
