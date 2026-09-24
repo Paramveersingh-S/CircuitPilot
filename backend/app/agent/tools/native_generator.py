@@ -18,7 +18,10 @@ import math
 import random
 from typing import Dict, List, Tuple, Optional
 
-KICAD_FOOTPRINTS_DIR = r"C:\Program Files\KiCad\10.99\share\kicad\footprints"
+KICAD_FOOTPRINTS_DIR = os.environ.get(
+    "KICAD_FOOTPRINTS_DIR",
+    r"C:\Program Files\KiCad\10.99\share\kicad\footprints"
+)
 
 FOOTPRINT_MAP = {
     "esp32":          r"RF_Module.pretty\ESP32-WROOM-32.kicad_mod",

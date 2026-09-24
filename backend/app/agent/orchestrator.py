@@ -236,14 +236,86 @@ class Orchestrator:
 
         await websocket.send_json({"type": "chat", "role": "assistant", "text": "Board generated successfully!"})
 
-        # ── Save to circuit memory DB (Phase B) ────────────────────────────
+        # ── Save to circuit memory DB ───────────────────────────────────────
         save_circuit(session_id, user_text, verified_components, pcb_path)
 
+        # ── Export Gerbers ──────────────────────────────────────────────────
+        from app.agent.tools.gerber_export import export_gerbers
+        gerber_ok, zip_path, _gerber_msg = export_gerbers(pcb_path)
+
         import time
-        board_url = f"http://localhost:8000/workspaces/{session_id}/{session_id}.kicad_pcb?t={int(time.time())}"
+        BASE_URL  = os.environ.get("BASE_URL", "http://localhost:8000")
+        board_url = f"{BASE_URL}/workspaces/{session_id}/{session_id}.kicad_pcb?t={int(time.time())}"
+
+        gerber_url = None
+        if gerber_ok and zip_path:
+            zip_name   = os.path.basename(zip_path)
+            gerber_url = f"{BASE_URL}/workspaces/{session_id}/{zip_name}"
+            await websocket.send_json({
+                "type": "chat", "role": "assistant",
+                "text": "Gerbers ready! Download below and order from JLCPCB/PCBWay."
+            })
+
+        # ── Generate BOM ────────────────────────────────────────────────────
+        bom = _generate_bom(verified_components)
+
+        # ── Enriched board_ready event (picked up by frontend) ──────────────
+        await websocket.send_json({
+            "type":        "board_ready",
+            "kicad_url":   board_url,
+            "gerber_url":  gerber_url,
+            "bom":         bom,
+            "order_links": {
+                "jlcpcb":  "https://cart.jlcpcb.com/quote",
+                "pcbway":  "https://www.pcbway.com/orderonline.aspx",
+                "oshpark": "https://oshpark.com/",
+            },
+        })
+
+        # Backward-compat event so KiCanvas still loads
         await websocket.send_json({"type": "file_changed", "path": board_url})
 
         history = session.get("history", [])
-        history.append({"role": "user", "content": user_text})
-        history.append({"role": "assistant", "content": "Generated IPC-verified native layout."})
+        history.append({"role": "user",      "content": user_text})
+        history.append({"role": "assistant", "content": "Generated IPC-verified layout with Gerbers + BOM."})
         session_manager.update_session(session_id, context, history)
+
+
+def _generate_bom(components: dict) -> list:
+    """
+    Build a Bill of Materials list from the verified component manifest.
+    Returns a list of dicts with ref, category, value, quantity, and Octopart URL.
+    """
+    bom: list = []
+    category_labels = {
+        "main_ics":              "Integrated Circuit",
+        "decoupling_capacitors": "Decoupling Capacitor",
+        "passives":              "Passive",
+        "connectors":            "Connector",
+    }
+    prefix_map = {
+        "main_ics":              "U",
+        "decoupling_capacitors": "C",
+        "passives":              "R",
+        "connectors":            "J",
+    }
+    counters: dict = {}
+
+    for category, items in components.items():
+        if not isinstance(items, list):
+            continue
+        prefix = prefix_map.get(category, "X")
+        for item in items:
+            n   = counters.get(prefix, 1)
+            ref = f"{prefix}{n}"
+            counters[prefix] = n + 1
+            bom.append({
+                "reference":  ref,
+                "value":      item,
+                "category":   category_labels.get(category, category),
+                "quantity":   1,
+                "footprint":  "SMD 0805" if category in ("decoupling_capacitors", "passives") else "",
+                "source_url": f"https://octopart.com/search?q={item.replace(' ', '+')}&currency=USD",
+            })
+    return bom
+

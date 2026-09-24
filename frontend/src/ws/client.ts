@@ -27,6 +27,23 @@ export type FileChangedEvent = BaseEvent & {
   path: string;
 };
 
+export type BoardReadyEvent = BaseEvent & {
+  type: "board_ready";
+  kicad_url: string;
+  gerber_url: string | null;
+  bom: BomItem[];
+  order_links: Record<string, string>;
+};
+
+export type BomItem = {
+  reference:  string;
+  value:      string;
+  category:   string;
+  quantity:   number;
+  footprint:  string;
+  source_url: string;
+};
+
 export type DRCResultEvent = BaseEvent & {
   type: "drc_result";
   violations: any[];
@@ -50,9 +67,11 @@ export type CircuitPilotEvent =
   | ToolCallStartedEvent
   | ToolCallCompletedEvent
   | FileChangedEvent
+  | BoardReadyEvent
   | DRCResultEvent
   | ApprovalRequiredEvent
   | ClarificationOptionsEvent;
+
 
 export class CircuitPilotClient {
   private ws: WebSocket;

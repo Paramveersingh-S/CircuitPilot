@@ -1,18 +1,13 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 
-// ─── Zoom/Pan overlay on top of KiCanvas ──────────────────────────────────────
-// KiCanvas handles its own internal pan/zoom via mouse, but we also expose
-// dedicated +/- buttons, scroll-wheel override, and a "Fit Board" reset button.
-
 export const BoardCanvas: React.FC<{ srcPath?: string }> = ({ srcPath }) => {
-  const canvasRef    = useRef<HTMLElement>(null);
-  const wrapperRef   = useRef<HTMLDivElement>(null);
-  const [zoom, setZoom]   = useState(1.0);
+  const canvasRef  = useRef<HTMLElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [zoom,   setZoom]   = useState(1.0);
   const [origin, setOrigin] = useState({ x: 0, y: 0 });
-  const isPanning    = useRef(false);
-  const lastMouse    = useRef({ x: 0, y: 0 });
+  const isPanning  = useRef(false);
+  const lastMouse  = useRef({ x: 0, y: 0 });
 
-  // Sync src attribute when board path changes + reset view
   useEffect(() => {
     if (canvasRef.current && srcPath) {
       canvasRef.current.setAttribute('src', srcPath);
@@ -21,11 +16,10 @@ export const BoardCanvas: React.FC<{ srcPath?: string }> = ({ srcPath }) => {
     setOrigin({ x: 0, y: 0 });
   }, [srcPath]);
 
-  // ── Zoom helpers ──────────────────────────────────────────────────────────
-  const clampZoom = (z: number) => Math.min(Math.max(z, 0.15), 10);
+  const clampZoom = (z: number) => Math.min(Math.max(z, 0.1), 12);
 
   const zoomBy = useCallback((delta: number) => {
-    setZoom(z => clampZoom(z + delta));
+    setZoom(z => clampZoom(z + z * delta));
   }, []);
 
   const fitBoard = useCallback(() => {
@@ -33,14 +27,11 @@ export const BoardCanvas: React.FC<{ srcPath?: string }> = ({ srcPath }) => {
     setOrigin({ x: 0, y: 0 });
   }, []);
 
-  // Scroll-wheel zoom (centred on cursor)
   const onWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
-    const factor = e.deltaY > 0 ? -0.08 : 0.08;
-    setZoom(z => clampZoom(z + z * factor));
-  }, []);
+    zoomBy(e.deltaY > 0 ? -0.1 : 0.1);
+  }, [zoomBy]);
 
-  // ── Pan via middle-mouse or right-mouse drag ──────────────────────────────
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button === 1 || e.button === 2) {
       isPanning.current = true;
@@ -63,133 +54,107 @@ export const BoardCanvas: React.FC<{ srcPath?: string }> = ({ srcPath }) => {
   const zoomPct   = Math.round(zoom * 100);
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '1.5rem', overflow: 'hidden' }}>
-      <div className="glass-surface" style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRadius: '1rem', overflow: 'hidden' }}>
+    <div className="glass-panel" style={{ overflow: 'hidden' }}>
 
-        {/* ── Toolbar ─────────────────────────────────────────────────────── */}
-        <div style={{
-          padding: '0.75rem 1.25rem',
-          background: 'rgba(0,0,0,0.25)',
-          borderBottom: '1px solid var(--border-color)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          gap: '0.75rem',
-        }}>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: '#fff' }}>
-            KiCanvas Workspace
-          </h2>
+      {/* ── Toolbar ──────────────────────────────────────────────────────── */}
+      <div className="panel-header">
+        <span className="panel-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ opacity: 0.7 }}>
+            <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+          </svg>
+          KiCanvas Workspace
+        </span>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            {/* Board name pill */}
-            <span style={{
-              fontSize: '0.8rem', color: 'var(--text-muted)',
-              background: 'rgba(255,255,255,0.06)', padding: '0.2rem 0.7rem',
-              borderRadius: '1rem', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}>
-              {srcPath ? `Loaded: ${srcPath.split('/').pop()?.split('?')[0]}` : 'Idle'}
-            </span>
-
-            {/* Zoom controls */}
-            {srcPath && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                <ZoomBtn onClick={() => zoomBy(-zoom * 0.15)} title="Zoom Out">−</ZoomBtn>
-
-                <span style={{
-                  fontSize: '0.78rem', color: 'var(--text-muted)',
-                  background: 'rgba(255,255,255,0.06)', padding: '0.2rem 0.5rem',
-                  borderRadius: '0.4rem', minWidth: 44, textAlign: 'center', userSelect: 'none',
-                }}>
-                  {zoomPct}%
-                </span>
-
-                <ZoomBtn onClick={() => zoomBy(zoom * 0.15)} title="Zoom In">+</ZoomBtn>
-                <ZoomBtn onClick={fitBoard} title="Fit board" style={{ fontSize: '0.7rem', padding: '0.25rem 0.5rem' }}>⤢ Fit</ZoomBtn>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ── Canvas Area ──────────────────────────────────────────────────── */}
-        <div
-          ref={wrapperRef}
-          onWheel={onWheel}
-          onMouseDown={onMouseDown}
-          onMouseMove={onMouseMove}
-          onMouseUp={onMouseUp}
-          onContextMenu={e => e.preventDefault()}
-          style={{
-            flex: 1, position: 'relative', background: '#090d14',
-            overflow: 'hidden', cursor: isPanning.current ? 'grabbing' : 'default',
-          }}
-        >
-          {srcPath ? (
-            <div style={{
-              width: '100%', height: '100%',
-              transform, transformOrigin: 'center center',
-              transition: isPanning.current ? 'none' : 'transform 0.05s ease-out',
-              willChange: 'transform',
-            }}>
-              {/* @ts-ignore — kicanvas-embed is a custom element */}
-              <kicanvas-embed
-                ref={canvasRef}
-                src={srcPath}
-                controls="true"
-                style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
-              />
-            </div>
-          ) : (
-            <EmptyState />
-          )}
-
-          {/* ── Mini zoom hint ────────────────────────────────────────────── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           {srcPath && (
-            <div style={{
-              position: 'absolute', bottom: '0.75rem', left: '50%',
-              transform: 'translateX(-50%)',
-              fontSize: '0.7rem', color: 'rgba(255,255,255,0.25)',
-              pointerEvents: 'none', userSelect: 'none',
+            <span style={{
+              fontSize: '11px', color: 'var(--text-muted)',
+              fontFamily: 'var(--font-mono)',
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid var(--border-subtle)',
+              padding: '2px 8px', borderRadius: 'var(--radius-sm)',
+              maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>
-              Scroll to zoom · Right-click drag to pan
-            </div>
+              {srcPath.split('/').pop()?.split('?')[0]}
+            </span>
+          )}
+
+          {srcPath && (
+            <>
+              <button className="zoom-btn" id="zoom-out-btn" onClick={() => zoomBy(-0.15)} title="Zoom Out">−</button>
+              <span className="zoom-pct">{zoomPct}%</span>
+              <button className="zoom-btn" id="zoom-in-btn" onClick={() => zoomBy(0.15)} title="Zoom In">+</button>
+              <button className="zoom-btn" id="fit-board-btn" onClick={fitBoard} title="Fit Board" style={{ width: 'auto', padding: '0 8px', fontSize: '11px' }}>⤢ Fit</button>
+            </>
           )}
         </div>
+      </div>
+
+      {/* ── Canvas ───────────────────────────────────────────────────────── */}
+      <div
+        ref={wrapperRef}
+        onWheel={onWheel}
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onContextMenu={e => e.preventDefault()}
+        style={{
+          flex: 1,
+          position: 'relative',
+          background: '#06090f',
+          overflow: 'hidden',
+          cursor: isPanning.current ? 'grabbing' : 'crosshair',
+        }}
+      >
+        {srcPath ? (
+          <div style={{
+            width: '100%', height: '100%',
+            transform, transformOrigin: 'center center',
+            transition: isPanning.current ? 'none' : 'transform 0.06s ease-out',
+            willChange: 'transform',
+          }}>
+            {/* @ts-ignore */}
+            <kicanvas-embed
+              ref={canvasRef}
+              src={srcPath}
+              controls="true"
+              style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+            />
+          </div>
+        ) : (
+          <PcbEmptyState />
+        )}
+
+        {srcPath && (
+          <div style={{
+            position: 'absolute', bottom: '12px', left: '50%',
+            transform: 'translateX(-50%)',
+            fontSize: '10.5px', color: 'rgba(255,255,255,0.2)',
+            pointerEvents: 'none', userSelect: 'none',
+            fontFamily: 'var(--font-body)',
+          }}>
+            Scroll to zoom · Right-click drag to pan
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-// ─── Sub-components ────────────────────────────────────────────────────────────
-const ZoomBtn: React.FC<{ onClick: () => void; title: string; style?: React.CSSProperties; children: React.ReactNode }> = ({
-  onClick, title, style: extraStyle, children,
-}) => (
-  <button
-    onClick={onClick}
-    title={title}
-    style={{
-      background: 'rgba(255,255,255,0.08)',
-      border: '1px solid rgba(255,255,255,0.12)',
-      color: '#fff',
-      borderRadius: '0.4rem',
-      width: 28, height: 28,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      cursor: 'pointer',
-      fontSize: '1rem', fontWeight: 700,
-      transition: 'background 0.15s',
-      padding: 0,
-      ...extraStyle,
-    }}
-    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(99,102,241,0.35)')}
-    onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
-  >
-    {children}
-  </button>
-);
-
-const EmptyState = () => (
-  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', color: 'var(--text-muted)' }}>
-    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ margin: '0 auto 1rem', opacity: 0.5, display: 'block' }}>
-      <path d="M20 7L12 3L4 7M20 7L12 11M20 7V17L12 21M12 11L4 7M12 11V21M4 7V17L12 21" strokeLinecap="round" strokeLinejoin="round"/>
+const PcbEmptyState = () => (
+  <div className="empty-state">
+    <svg className="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
+      <rect x="2" y="2" width="20" height="20" rx="3" strokeDasharray="3 2"/>
+      <circle cx="7" cy="7" r="1.5" fill="currentColor" opacity="0.5"/>
+      <circle cx="17" cy="7" r="1.5" fill="currentColor" opacity="0.5"/>
+      <circle cx="7" cy="17" r="1.5" fill="currentColor" opacity="0.5"/>
+      <circle cx="17" cy="17" r="1.5" fill="currentColor" opacity="0.5"/>
+      <path d="M7 7h4M13 7h4M7 17h4M13 17h4M7 9v4M17 9v4" strokeLinecap="round"/>
     </svg>
-    <p style={{ fontSize: '1.1rem', fontWeight: 500, color: '#fff', marginBottom: '0.25rem' }}>No Board Loaded</p>
-    <p style={{ fontSize: '0.9rem' }}>Waiting for the layout agent to generate a PCB...</p>
+    <div className="empty-state-title">No Board Loaded</div>
+    <div className="empty-state-sub">
+      Describe your circuit in the chat panel.<br />
+      The AI will generate a KiCad PCB here.
+    </div>
   </div>
 );

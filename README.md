@@ -95,6 +95,11 @@ flowchart TD
 - **Net-Aware Ratsnest Routing**: Routes shortest connections first per net, like a real EDA tool
 - **IPC-2152 Trace Widths**: Power nets routed at 0.8mm, signal nets at 0.25mm automatically
 - **Multi-Layer Routing**: Automatically switches between F.Cu and B.Cu with drill vias
+- **Automated BOM Generation**: Instant Bills of Materials extracted from AI manifests with direct Octopart purchasing links
+- **Automated Gerber Extraction**: Automatically generates and zips production-ready Gerbers and NC Drill files using `kicad-cli`
+- **Premium User Interface**: Glassmorphism design, mesh gradients, and animated chat components for a startup-grade SaaS feel
+- **Secure JWT Authentication**: Built-in User Management, registration, and login endpoints
+- **Cross-Platform Infrastructure**: Fully environment variable driven (`.env`) for seamless local Windows to cloud Linux Docker deployment
 - **DFM Edge Clearances**: 15mm margins enforced from board edge (fabrication safe)
 - **Provider-Agnostic AI**: Switch between OpenAI, Gemini, Anthropic, or local Ollama via `.env`
 - **Interactive KiCanvas Viewer**: Zoom, pan, and inspect the board before downloading

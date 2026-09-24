@@ -1,105 +1,205 @@
 import React, { useState, useEffect, useRef } from 'react';
+import type { BomItem } from '../ws/client';
 
 export interface ChatMessage { role: 'user' | 'assistant'; text: string; }
 
-export const ChatPanel: React.FC<{ 
-  onSendCommand: (cmd: string) => void,
-  messages: ChatMessage[],
-  clarificationOptions?: {id: string, label: string}[]
-}> = ({ onSendCommand, messages, clarificationOptions = [] }) => {
-  const [input, setInput] = useState('');
-  const endRef = useRef<HTMLDivElement>(null);
+interface BoardState {
+  kicadUrl:   string;
+  gerberUrl:  string | null;
+  bom:        BomItem[];
+  orderLinks: Record<string, string>;
+}
+
+interface Props {
+  onSendCommand:        (cmd: string) => void;
+  messages:             ChatMessage[];
+  clarificationOptions?: { id: string; label: string }[];
+  isThinking?:          boolean;
+  boardState?:          BoardState | null;
+}
+
+export const ChatPanel: React.FC<Props> = ({
+  onSendCommand,
+  messages,
+  clarificationOptions = [],
+  isThinking = false,
+  boardState = null,
+}) => {
+  const [input,      setInput]      = useState('');
+  const [showBom,    setShowBom]    = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef  = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, clarificationOptions]);
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+  }, [messages, clarificationOptions, isThinking, boardState]);
 
   const handleSend = () => {
     if (!input.trim()) return;
-    onSendCommand(input);
+    onSendCommand(input.trim());
     setInput('');
+    setShowBom(false);
+    inputRef.current?.focus();
   };
 
   return (
-    <div className="glass-panel" style={{ width: '320px', display: 'flex', flexDirection: 'column', padding: '1.5rem' }}>
-      <h2 style={{ fontSize: '1.25rem', fontWeight: 600, letterSpacing: '-0.025em', marginBottom: '1.5rem', color: '#fff' }}>CircuitPilot Assistant</h2>
-      
-      <div className="chat-history" style={{ flex: 1, overflowY: 'auto', marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', paddingRight: '0.5rem' }}>
-        {messages.length === 0 && (
-          <div style={{ margin: 'auto', color: 'var(--text-muted)', textAlign: 'center', fontSize: '0.9rem' }}>
-            <p>Welcome to CircuitPilot.</p>
-            <p>Try asking: "Create a 5V buck converter"</p>
-          </div>
-        )}
-        {messages.map((msg, i) => (
-          <div key={i} className="chat-message" style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
-            <div style={{ 
-              background: msg.role === 'user' ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : 'var(--bg-surface)', 
-              color: '#fff',
-              padding: '0.75rem 1rem', 
-              borderRadius: msg.role === 'user' ? '1rem 1rem 0 1rem' : '1rem 1rem 1rem 0',
-              maxWidth: '85%',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-              fontSize: '0.95rem',
-              lineHeight: '1.4'
-            }}>
-              {msg.text}
-            </div>
-          </div>
-        ))}
-        
-        {clarificationOptions.length > 0 && (
-          <div className="chat-message" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
-            {clarificationOptions.map(opt => (
-              <button 
-                key={opt.id}
-                onClick={() => onSendCommand(opt.label)}
-                style={{
-                  background: 'rgba(59, 130, 246, 0.15)',
-                  border: '1px solid var(--accent-color)',
-                  color: '#fff',
-                  padding: '0.6rem 1rem',
-                  borderRadius: '0.5rem',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  fontSize: '0.9rem',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.3)'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.15)'}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        )}
-        
-        <div ref={endRef} />
+    <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column' }}>
+      {/* ── Header ──────────────────────────────────────────────────────── */}
+      <div className="panel-header">
+        <span className="panel-title">
+          <span className="panel-title-dot" />
+          CircuitPilot
+        </span>
+        <span className={`status-badge ${isThinking ? 'loaded' : boardState ? 'ready' : 'idle'}`}>
+          {isThinking ? '⏳ Thinking' : boardState ? '✓ Board Ready' : '● Idle'}
+        </span>
       </div>
 
-      <div className="chat-input" style={{ display: 'flex', gap: '0.5rem', background: 'var(--bg-surface)', padding: '0.5rem', borderRadius: '0.75rem', border: '1px solid var(--border-color)' }}>
-        <input 
-          type="text" 
-          value={input} 
-          onChange={(e) => setInput(e.target.value)} 
-          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder="Design a circuit..."
-          style={{ flex: 1, padding: '0.5rem 0.75rem', background: 'transparent', border: 'none', color: '#fff', outline: 'none', fontSize: '0.95rem' }}
-        />
-        <button 
-          onClick={handleSend} 
-          style={{ 
-            background: 'var(--accent-color)', 
-            color: '#fff', 
-            border: 'none', 
-            padding: '0.5rem 1.25rem', 
-            borderRadius: '0.5rem',
-            cursor: 'pointer',
-            fontWeight: 500
-          }}>
-          Send
-        </button>
+      {/* ── Messages ────────────────────────────────────────────────────── */}
+      <div className="chat-scroll" ref={scrollRef}>
+        {messages.length === 0 && (
+          <div style={{ textAlign: 'center', marginTop: '32px' }}>
+            <div style={{ fontSize: '32px', marginBottom: '12px' }}>🔌</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '15px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+              Welcome to CircuitPilot
+            </div>
+            <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              Describe any circuit in plain English.<br />
+              Try: <em style={{ color: 'var(--text-accent)' }}>"ESP32 IoT board with BME280 and USB-C"</em>
+            </div>
+          </div>
+        )}
+
+        {messages.map((msg, i) => (
+          <div key={i} className={`chat-bubble-wrap ${msg.role}`}>
+            <div className={`chat-bubble ${msg.role}`}>{msg.text}</div>
+          </div>
+        ))}
+
+        {isThinking && (
+          <div className="chat-bubble-wrap assistant">
+            <div className="chat-bubble assistant" style={{ padding: '6px 14px' }}>
+              <div className="thinking-dots">
+                <span /><span /><span />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Clarification Chips ──────────────────────────────────────────── */}
+      {clarificationOptions.length > 0 && (
+        <div className="clarification-group">
+          {clarificationOptions.map(opt => (
+            <button
+              key={opt.id}
+              className="clarification-chip"
+              onClick={() => onSendCommand(opt.label)}
+            >
+              ↳ {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ── Board Ready Card ─────────────────────────────────────────────── */}
+      {boardState && (
+        <>
+          <div className="board-ready-card">
+            <div className="board-ready-title">
+              <span>✓</span> Board Generated
+            </div>
+
+            <a href={boardState.kicadUrl} download className="board-action-btn primary">
+              <span>⬇</span> Download .kicad_pcb
+            </a>
+
+            {boardState.gerberUrl && (
+              <a href={boardState.gerberUrl} download className="board-action-btn secondary">
+                <span>📦</span> Download Gerbers (ZIP)
+              </a>
+            )}
+
+            {Object.keys(boardState.orderLinks).length > 0 && (
+              <div className="fab-links">
+                {Object.entries(boardState.orderLinks).map(([name, url]) => (
+                  <a key={name} href={url} target="_blank" rel="noreferrer" className="fab-link">
+                    {name.charAt(0).toUpperCase() + name.slice(1)}
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ── BOM ───────────────────────────────────────────────────────── */}
+          {boardState.bom.length > 0 && (
+            <div className="bom-section">
+              <button className="bom-toggle-btn" onClick={() => setShowBom(v => !v)}>
+                {showBom ? '▾' : '▸'} Bill of Materials ({boardState.bom.length} parts)
+              </button>
+              {showBom && (
+                <div style={{ overflowX: 'auto', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', marginTop: '6px' }}>
+                  <table className="bom-table">
+                    <thead>
+                      <tr>
+                        <th>Ref</th>
+                        <th>Value</th>
+                        <th>Cat</th>
+                        <th>Buy</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {boardState.bom.map((item, i) => (
+                        <tr key={i}>
+                          <td><span className="bom-ref">{item.reference}</span></td>
+                          <td style={{ maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.value}</td>
+                          <td style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{item.category.split(' ')[0]}</td>
+                          <td>
+                            <a href={item.source_url} target="_blank" rel="noreferrer" className="bom-link">
+                              Octopart ↗
+                            </a>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ── Input ────────────────────────────────────────────────────────── */}
+      <div className="chat-input-area">
+        <div className="chat-input-row">
+          <input
+            ref={inputRef}
+            id="circuit-prompt-input"
+            type="text"
+            className="chat-input"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSend()}
+            placeholder="Describe a circuit…"
+            disabled={isThinking}
+          />
+          <button
+            id="send-prompt-btn"
+            className="chat-send-btn"
+            onClick={handleSend}
+            disabled={isThinking || !input.trim()}
+          >
+            Generate ↗
+          </button>
+        </div>
+      </div>
+
+      <div className="chat-footer-strip">
+        Physics-based routing · IPC-2152 compliant · KiCad native
       </div>
     </div>
   );
 };
+
+

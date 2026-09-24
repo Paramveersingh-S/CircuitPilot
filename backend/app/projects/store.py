@@ -5,9 +5,17 @@ import shutil
 class ProjectStore:
     """
     Git-backed workspace CRUD operations.
+    All paths are driven by the WORKSPACES_DIR environment variable.
     """
-    def __init__(self, base_dir: str = "d:/Projects/CircuitPilotv1/workspaces"):
-        self.base_dir = base_dir
+    def __init__(self, base_dir: str | None = None):
+        if base_dir is None:
+            # Default: resolve from env, fall back to project-relative path
+            default = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "..", "..", "..", "workspaces"
+            )
+            base_dir = os.environ.get("WORKSPACES_DIR", default)
+        self.base_dir = os.path.abspath(base_dir)
         os.makedirs(self.base_dir, exist_ok=True)
 
     def get_project_path(self, project_id: str) -> str:

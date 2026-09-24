@@ -26,6 +26,14 @@ def init_db():
     """Create tables if they don't exist. Called once on startup."""
     with _get_conn() as conn:
         conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id         TEXT PRIMARY KEY,
+                email      TEXT UNIQUE NOT NULL,
+                pwd_hash   TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )
+        """)
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS sessions (
                 session_id   TEXT PRIMARY KEY,
                 user_id      TEXT,
@@ -61,6 +69,31 @@ def init_db():
             )
         """)
         conn.commit()
+
+
+# ─── User Management ──────────────────────────────────────────────────────────
+
+def create_user(email: str, pwd_hash: str) -> str:
+    user_id = str(uuid.uuid4())
+    now = datetime.utcnow().isoformat()
+    with _get_conn() as conn:
+        try:
+            conn.execute(
+                "INSERT INTO users (id, email, pwd_hash, created_at) VALUES (?,?,?,?)",
+                (user_id, email, pwd_hash, now)
+            )
+            conn.commit()
+            return user_id
+        except sqlite3.IntegrityError:
+            raise ValueError("Email already registered")
+
+def get_user_by_email(email: str) -> Optional[sqlite3.Row]:
+    with _get_conn() as conn:
+        return conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+
+def get_user_by_id(user_id: str) -> Optional[sqlite3.Row]:
+    with _get_conn() as conn:
+        return conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
 
 
 # ─── Session CRUD ──────────────────────────────────────────────────────────────
