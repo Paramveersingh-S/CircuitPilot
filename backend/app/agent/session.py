@@ -17,9 +17,9 @@ class SessionManager:
     All state is persisted to SQLite so it survives server restarts.
     """
 
-    def create_session(self) -> str:
+    def create_session(self, user_id:Optional[str]=None) -> str:
         session_id = str(uuid.uuid4())
-        db_create(session_id)
+        db_create(session_id, user_id=user_id)
         return session_id
 
     def get_session(self, session_id: str) -> Optional[dict]:

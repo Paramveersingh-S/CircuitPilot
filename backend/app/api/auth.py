@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import RedirectResponse
 import httpx 
+from app.agent.session import SessionManager
 
 
 # 1. Load the vault
@@ -49,4 +50,14 @@ async def get_callback(code:str):
         if user.status_code != 200:
             raise HTTPException(status_code=502, detail="Could not fetch GitHub profile")
 
-        return user.json()
+        github_id = str(user.json()["id"])
+        session_manager = SessionManager()
+        session_id = session_manager.create_session(github_id)
+        return {
+            "message": "Login successful!", 
+            "github_id": github_id, 
+            "session_id": session_id
+        }
+
+
+    
