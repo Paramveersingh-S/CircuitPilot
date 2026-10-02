@@ -14,10 +14,12 @@ load_dotenv()
 
 # 2. Initialize the FastAPI router
 router = APIRouter()
+
+#3. Get the OAuth details
 GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID")
 GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET")
 
-# 3. Fetch the specific key
+
 
 # 4. The Login Gateway Endpoint
 @router.get("/login")
