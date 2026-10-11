@@ -8,7 +8,7 @@ from app.agent.llm_client import LLMClient
 async def main():
     try:
         client = LLMClient()
-        print('Model:', client.model_name)
+        print('Model:', getattr(client, 'model', getattr(client, 'model_name', 'unknown')))
         print('API Base:', os.environ.get("OPENAI_API_BASE"))
         resp = await client.chat([{'role': 'user', 'content': 'hello'}])
         print(resp.choices[0].message.content)

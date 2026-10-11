@@ -126,8 +126,9 @@ async def websocket_endpoint(websocket: WebSocket):
 
             if payload.get("type") == "user_command":
                 user_text = payload.get("text", "")
+                images    = payload.get("images", [])
                 await orchestrator.handle_command(
-                    session_manager, session_id, user_text, websocket
+                    session_manager, session_id, user_text, websocket, images=images
                 )
 
     except WebSocketDisconnect:

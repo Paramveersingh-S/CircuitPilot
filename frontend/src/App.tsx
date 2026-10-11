@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ChatPanel } from './components/ChatPanel';
+import { ChatPanel, ChatMessage } from './components/ChatPanel';
 import { BoardCanvas } from './components/BoardCanvas';
 import { ActivityFeed } from './components/ActivityFeed';
 import { CircuitPilotClient, CircuitPilotEvent, BomItem } from './ws/client';
@@ -7,16 +7,18 @@ import { CircuitPilotClient, CircuitPilotEvent, BomItem } from './ws/client';
 const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws';
 
 interface BoardState {
-  kicadUrl:   string;
-  gerberUrl:  string | null;
-  bom:        BomItem[];
-  orderLinks: Record<string, string>;
+  kicadUrl:    string;
+  pythonUrl?:  string;
+  pythonCode?: string;
+  gerberUrl:   string | null;
+  bom:         BomItem[];
+  orderLinks:  Record<string, string>;
 }
 
 export const App: React.FC = () => {
   const [client,               setClient]               = useState<CircuitPilotClient | null>(null);
   const [events,               setEvents]               = useState<CircuitPilotEvent[]>([]);
-  const [chatMessages,         setChatMessages]         = useState<{role:'user'|'assistant'; text:string}[]>([]);
+  const [chatMessages,         setChatMessages]         = useState<ChatMessage[]>([]);
   const [boardState,           setBoardState]           = useState<BoardState | null>(null);
   const [clarificationOptions, setClarificationOptions] = useState<{id:string; label:string}[]>([]);
   const [isThinking,           setIsThinking]           = useState(false);
@@ -31,6 +33,8 @@ export const App: React.FC = () => {
       if (ev.type === 'board_ready') {
         setBoardState({
           kicadUrl:   ev.kicad_url,
+          pythonUrl:  ev.python_url,
+          pythonCode: ev.python_code,
           gerberUrl:  ev.gerber_url,
           bom:        ev.bom,
           orderLinks: ev.order_links,
@@ -43,7 +47,7 @@ export const App: React.FC = () => {
         });
         setIsThinking(false);
       } else if (ev.type === 'chat') {
-        setChatMessages((prev) => [...prev, { role: ev.role, text: ev.text }]);
+        setChatMessages((prev) => [...prev, { role: ev.role, text: ev.text, images: ev.images }]);
         if (ev.role === 'assistant') setIsThinking(false);
       } else if (ev.type === 'clarification_options') {
         setClarificationOptions(ev.options);
@@ -54,12 +58,12 @@ export const App: React.FC = () => {
     return () => { unsub(); };
   }, []);
 
-  const handleCommand = (cmd: string) => {
+  const handleCommand = (cmd: string, images?: string[]) => {
     if (!client) return;
-    setChatMessages((prev) => [...prev, { role: 'user', text: cmd }]);
+    setChatMessages((prev) => [...prev, { role: 'user', text: cmd, images }]);
     setClarificationOptions([]);
     setIsThinking(true);
-    client.sendCommand(cmd);
+    client.sendCommand(cmd, images);
   };
 
   return (
@@ -76,4 +80,3 @@ export const App: React.FC = () => {
     </div>
   );
 };
-

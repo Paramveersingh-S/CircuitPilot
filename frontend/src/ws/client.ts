@@ -7,6 +7,7 @@ export type ChatEvent = BaseEvent & {
   type: "chat";
   role: "assistant" | "user";
   text: string;
+  images?: string[];
 };
 
 export type ToolCallStartedEvent = BaseEvent & {
@@ -30,6 +31,8 @@ export type FileChangedEvent = BaseEvent & {
 export type BoardReadyEvent = BaseEvent & {
   type: "board_ready";
   kicad_url: string;
+  python_url?: string;
+  python_code?: string;
   gerber_url: string | null;
   bom: BomItem[];
   order_links: Record<string, string>;
@@ -96,9 +99,9 @@ export class CircuitPilotClient {
     return () => this.messageHandlers.delete(handler);
   }
 
-  public sendCommand(text: string) {
+  public sendCommand(text: string, images?: string[]) {
     if (this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({ type: "user_command", text }));
+      this.ws.send(JSON.stringify({ type: "user_command", text, images: images || [] }));
     }
   }
 

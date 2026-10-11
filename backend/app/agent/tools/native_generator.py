@@ -209,9 +209,9 @@ def build_ratsnest(components: List[Component]) -> List[Tuple[Component, Compone
     for i, a in enumerate(ics):
         for b in ics[i+1:]:
             dist = math.hypot(a.x - b.x, a.y - b.y)
-            ic_pairs.append((dist, a, b))
+            ic_pairs.append((dist, id(a), id(b), a, b))
     ic_pairs.sort()
-    for dist, a, b in ic_pairs:
+    for dist, id_a, id_b, a, b in ic_pairs:
         connections.append((a, b, "signal", 0.25))
 
     # Sort by distance → shortest traces routed first (like a real auto-router)
@@ -498,5 +498,8 @@ def generate_kicad_pcb(target_path: str, components_dict) -> bool:
 
     except Exception as e:
         import traceback
-        print(f"Native Generator v3.0 failed: {e}\n{traceback.format_exc()}")
+        err_msg = f"Native Generator v3.0 failed: {e}\n{traceback.format_exc()}"
+        print(err_msg)
+        with open("native_generator_error.log", "w", encoding="utf-8") as err_file:
+            err_file.write(err_msg)
         return False

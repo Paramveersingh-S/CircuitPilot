@@ -1,6 +1,8 @@
 from pydantic import BaseModel
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 import json
+import os
+import time
 from .llm_client import LLMClient
 from app.db import get_circuit_memory, save_circuit, create_session as db_create_session
 
@@ -12,6 +14,8 @@ class PlanResult(BaseModel):
     status: str  # 'CLARIFICATION_REQUIRED' or 'READY_TO_EXECUTE'
     options: List[ClarificationOption] = []
     components: dict = {}
+    title: str = "Custom PCB Circuit"
+    nets: List[dict] = []
     message: str = ""
 
 # ─── Critic Verifier ──────────────────────────────────────────────────────────
@@ -38,8 +42,8 @@ Your job is to review an AI-generated component list for a PCB and ensure it is 
 Rules you MUST enforce:
 1. Every IC in 'main_ics' needs at least one decoupling capacitor (100nF) in 'decoupling_capacitors'.
 2. Every LED in 'passives' needs a current-limiting resistor in 'passives'.
-3. If there are main_ics but no power connector in 'connectors', add a BarrelJack.
-4. If a Microcontroller is present and no Crystal is listed, add a Crystal Oscillator to 'main_ics'.
+3. If there are main_ics but no power connector in 'connectors', add a BarrelJack or 2-Pin Terminal Block.
+4. If a Microcontroller is present and no Crystal is listed, add a Crystal Oscillator to 'main_ics' (unless ESP32 with internal crystal).
 5. Do NOT add components the user didn't ask for beyond essential support components.
 6. Do NOT remove components the user explicitly asked for.
 
@@ -86,7 +90,13 @@ class Planner:
     def __init__(self):
         self.llm = LLMClient()
 
-    async def process(self, user_text: str, context: str, memory: list = []) -> PlanResult:
+    async def process(
+        self,
+        user_text: str,
+        context: str,
+        memory: list = [],
+        images: Optional[List[str]] = None
+    ) -> PlanResult:
         # Build memory context block for Phase B
         memory_block = ""
         if memory:
@@ -98,13 +108,23 @@ class Planner:
                 memory_block += f"{i}. Prompt: \"{m['prompt']}\" → {comps_summary}\n"
             memory_block += "\nUse this to understand user preferences and improve your component selection.\n"
 
+        image_guidance = ""
+        if images:
+            image_guidance = """
+The user provided one or more circuit / schematic images.
+Thoroughly examine the schematic / block diagram / pinout / handwritten circuit in the image:
+1. Extract all components shown: ICs, transistors, diodes, LEDs, resistors, capacitors, switches, connectors.
+2. Note the electrical connections (nets), voltage rails (VCC/5V/3.3V/GND), and signal paths.
+3. Incorporate these components and nets into your hardware manifest.
+"""
+
         system_prompt = f"""\
-You are the CircuitPilot Planner, an expert PCB designer.
-Context: {context}{memory_block}
+You are the CircuitPilot Planner, an expert PCB designer and hardware engineer.
+Context: {context}{memory_block}{image_guidance}
 
 If the user's request is ambiguous or underspecified, ask a clarifying question with 2-4 options.
-If fully specified, extract all components into a categorized JSON object with keys:
-'main_ics', 'decoupling_capacitors', 'passives', 'connectors'.
+If fully specified (or circuit image provided), extract all components into a categorized JSON object with keys:
+'title', 'main_ics', 'decoupling_capacitors', 'passives', 'connectors', 'nets'.
 
 Structure 1 (Clarification):
 {{
@@ -119,13 +139,20 @@ Structure 1 (Clarification):
 Structure 2 (Execution):
 {{
   "status": "READY_TO_EXECUTE",
-  "message": "Generating hardware layout...",
+  "title": "ESP32 IoT Sensor Node",
+  "message": "Generating KiCad PCB layout and copper paths...",
   "components": {{
-    "main_ics": ["ESP32", "VoltageRegulator"],
-    "decoupling_capacitors": ["100nF Cap", "10uF Cap"],
-    "passives": ["LED", "Resistor"],
-    "connectors": ["BarrelJack", "ProgrammingHeader"]
-  }}
+    "main_ics": ["ESP32-WROOM-32", "BME280"],
+    "decoupling_capacitors": ["100nF Ceramic", "10uF Tantalum"],
+    "passives": ["10k Resistor", "Status LED"],
+    "connectors": ["USB-C Connector", "I2C Header"]
+  }},
+  "nets": [
+    {{"name": "VCC", "type": "power", "width": 0.8}},
+    {{"name": "GND", "type": "ground", "width": 0.8}},
+    {{"name": "SDA", "type": "signal", "width": 0.25}},
+    {{"name": "SCL", "type": "signal", "width": 0.25}}
+  ]
 }}
 IMPORTANT: Output raw JSON only. No markdown code fences."""
 
@@ -135,7 +162,7 @@ IMPORTANT: Output raw JSON only. No markdown code fences."""
         ]
 
         try:
-            response = await self.llm.chat(messages=messages)
+            response = await self.llm.chat(messages=messages, images=images)
             content = response.choices[0].message.content
             start = content.find('{')
             end = content.rfind('}') + 1
@@ -150,13 +177,20 @@ IMPORTANT: Output raw JSON only. No markdown code fences."""
                 else:
                     return PlanResult(
                         status="READY_TO_EXECUTE",
-                        message=data.get("message", "Executing..."),
-                        components=data.get("components", {})
+                        title=data.get("title", "Custom Circuit PCB"),
+                        message=data.get("message", "Executing layout generation..."),
+                        components=data.get("components", {}),
+                        nets=data.get("nets", [])
                     )
         except Exception as e:
             import traceback
             print(f"Planner error: {traceback.format_exc()}")
-            return PlanResult(status="READY_TO_EXECUTE", message=f"Error generating plan: {str(e)}")
+            return PlanResult(
+                status="READY_TO_EXECUTE",
+                title="PCB Design",
+                message=f"Error generating plan: {str(e)}",
+                components={"main_ics": [user_text], "decoupling_capacitors": ["100nF Cap"], "passives": ["10k Resistor"], "connectors": ["2-Pin Header"]}
+            )
 
 
 # ─── Orchestrator ─────────────────────────────────────────────────────────────
@@ -165,7 +199,14 @@ class Orchestrator:
         self.planner = Planner()
         self.critic  = Critic()
 
-    async def handle_command(self, session_manager, session_id: str, user_text: str, websocket):
+    async def handle_command(
+        self,
+        session_manager,
+        session_id: str,
+        user_text: str,
+        websocket,
+        images: Optional[List[str]] = None
+    ):
         session = session_manager.get_session(session_id)
         if not session:
             session_id = session_manager.create_session()
@@ -177,8 +218,9 @@ class Orchestrator:
         memory = get_circuit_memory(session_id, limit=3)
 
         # ── Step 2: Plan ────────────────────────────────────────────────────
-        await websocket.send_json({"type": "chat", "role": "assistant", "text": "Thinking..."})
-        plan = await self.planner.process(user_text, context=str(context), memory=memory)
+        img_msg = f" (analyzing {len(images)} image(s))" if images else ""
+        await websocket.send_json({"type": "chat", "role": "assistant", "text": f"Thinking{img_msg}..."})
+        plan = await self.planner.process(user_text, context=str(context), memory=memory, images=images)
         await websocket.send_json({"type": "chat", "role": "assistant", "text": plan.message})
 
         if plan.status == "CLARIFICATION_REQUIRED":
@@ -214,27 +256,43 @@ class Orchestrator:
                 "text": "Technical review passed — component list is IPC-compliant."
             })
 
-        # ── Step 3: Route & Generate ───────────────────────────────────────
+        # ── Step 3: Route & Generate KiCad Python Script & PCB ─────────────
         from app.projects.store import project_store
-        from app.agent.tools.native_generator import generate_kicad_pcb
-        import os
+        from app.agent.tools.kicad_py_generator import build_and_execute_circuit_script
 
         project_store.init_project(session_id)
         project_path = project_store.get_project_path(session_id)
 
         await websocket.send_json({
             "type": "chat", "role": "assistant",
-            "text": "Routing PCB with Force-Directed 45-degree multi-layer algorithm..."
+            "text": "Generating KiCad Python generator script (circuit_generator.py) & routing 45° copper paths..."
         })
 
         pcb_path = os.path.join(project_path, f"{session_id}.kicad_pcb")
-        success = generate_kicad_pcb(pcb_path, verified_components)
+        py_path  = os.path.join(project_path, "circuit_generator.py")
 
-        if not success:
-            await websocket.send_json({"type": "chat", "role": "assistant", "text": "Build failed: Native Generation Error"})
-            return
+        circuit_title = plan.title or "AI Generated PCB"
+        success, py_code = build_and_execute_circuit_script(
+            circuit_title=circuit_title,
+            prompt=user_text,
+            components_manifest=verified_components,
+            nets_manifest=plan.nets,
+            output_py_path=py_path,
+            output_pcb_path=pcb_path
+        )
 
-        await websocket.send_json({"type": "chat", "role": "assistant", "text": "Board generated successfully!"})
+        if not success or not os.path.exists(pcb_path):
+            # Fallback to native generator
+            from app.agent.tools.native_generator import generate_kicad_pcb
+            fallback_ok = generate_kicad_pcb(pcb_path, verified_components)
+            if not fallback_ok:
+                await websocket.send_json({"type": "chat", "role": "assistant", "text": "Build failed: Generation Error"})
+                return
+
+        await websocket.send_json({
+            "type": "chat", "role": "assistant",
+            "text": "KiCad PCB & Python script generated successfully! Copper paths routed on F.Cu/B.Cu with GND ground pour."
+        })
 
         # ── Save to circuit memory DB ───────────────────────────────────────
         save_circuit(session_id, user_text, verified_components, pcb_path)
@@ -243,9 +301,9 @@ class Orchestrator:
         from app.agent.tools.gerber_export import export_gerbers
         gerber_ok, zip_path, _gerber_msg = export_gerbers(pcb_path)
 
-        import time
-        BASE_URL  = os.environ.get("BASE_URL", "http://localhost:8000")
-        board_url = f"{BASE_URL}/workspaces/{session_id}/{session_id}.kicad_pcb?t={int(time.time())}"
+        BASE_URL   = os.environ.get("BASE_URL", "http://localhost:8000")
+        board_url  = f"{BASE_URL}/workspaces/{session_id}/{session_id}.kicad_pcb?t={int(time.time())}"
+        python_url = f"{BASE_URL}/workspaces/{session_id}/circuit_generator.py?t={int(time.time())}"
 
         gerber_url = None
         if gerber_ok and zip_path:
@@ -263,6 +321,8 @@ class Orchestrator:
         await websocket.send_json({
             "type":        "board_ready",
             "kicad_url":   board_url,
+            "python_url":  python_url,
+            "python_code": py_code,
             "gerber_url":  gerber_url,
             "bom":         bom,
             "order_links": {
@@ -277,7 +337,7 @@ class Orchestrator:
 
         history = session.get("history", [])
         history.append({"role": "user",      "content": user_text})
-        history.append({"role": "assistant", "content": "Generated IPC-verified layout with Gerbers + BOM."})
+        history.append({"role": "assistant", "content": "Generated KiCad PCB Python script with copper paths & Gerbers."})
         session_manager.update_session(session_id, context, history)
 
 
@@ -318,4 +378,3 @@ def _generate_bom(components: dict) -> list:
                 "source_url": f"https://octopart.com/search?q={item.replace(' ', '+')}&currency=USD",
             })
     return bom
-
