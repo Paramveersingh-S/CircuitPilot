@@ -81,6 +81,11 @@ FOOTPRINT_TEMPLATES = {{
   (fp_line (start -1.85 0.95) (end -1.85 -0.95) (stroke (width 0.05) (type solid)) (layer "F.CrtYd"))
   (pad "1" smd roundrect (at -0.95 0) (size 1.0 1.3) (layers "F.Cu" "F.Paste" "F.Mask") (roundrect_rratio 0.25) {{NET1}})
   (pad "2" smd roundrect (at 0.95 0) (size 1.0 1.3) (layers "F.Cu" "F.Paste" "F.Mask") (roundrect_rratio 0.25) {{NET2}})
+  (model "${{KICAD10_3DMODEL_DIR}}/Resistor_SMD.3dshapes/R_0805_2012Metric.step"
+    (offset (xyz 0 0 0))
+    (scale (xyz 1 1 1))
+    (rotate (xyz 0 0 0))
+  )
 )""",
 
     "capacitor": """(footprint "Capacitor_SMD:C_0805_2012Metric" (layer "F.Cu")
@@ -92,6 +97,11 @@ FOOTPRINT_TEMPLATES = {{
   (fp_line (start -1.85 0.95) (end -1.85 -0.95) (stroke (width 0.05) (type solid)) (layer "F.CrtYd"))
   (pad "1" smd roundrect (at -0.95 0) (size 1.0 1.3) (layers "F.Cu" "F.Paste" "F.Mask") (roundrect_rratio 0.25) {{NET1}})
   (pad "2" smd roundrect (at 0.95 0) (size 1.0 1.3) (layers "F.Cu" "F.Paste" "F.Mask") (roundrect_rratio 0.25) {{NET2}})
+  (model "${{KICAD10_3DMODEL_DIR}}/Capacitor_SMD.3dshapes/C_0805_2012Metric.step"
+    (offset (xyz 0 0 0))
+    (scale (xyz 1 1 1))
+    (rotate (xyz 0 0 0))
+  )
 )""",
 
     "led": """(footprint "LED_SMD:LED_0805_2012Metric" (layer "F.Cu")
@@ -100,6 +110,11 @@ FOOTPRINT_TEMPLATES = {{
   (fp_line (start -0.35 -0.6) (end -0.35 0.6) (stroke (width 0.12) (type solid)) (layer "F.SilkS"))
   (pad "1" smd roundrect (at -1.05 0) (size 1.05 1.25) (layers "F.Cu" "F.Paste" "F.Mask") (roundrect_rratio 0.25) {{NET1}})
   (pad "2" smd roundrect (at 1.05 0) (size 1.05 1.25) (layers "F.Cu" "F.Paste" "F.Mask") (roundrect_rratio 0.25) {{NET2}})
+  (model "${{KICAD10_3DMODEL_DIR}}/LED_SMD.3dshapes/LED_0805_2012Metric.step"
+    (offset (xyz 0 0 0))
+    (scale (xyz 1 1 1))
+    (rotate (xyz 0 0 0))
+  )
 )""",
 
     "soic8": """(footprint "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm" (layer "F.Cu")
@@ -114,6 +129,11 @@ FOOTPRINT_TEMPLATES = {{
   (pad "6" smd roundrect (at 2.7 0.635) (size 1.55 0.6) (layers "F.Cu" "F.Paste" "F.Mask") (roundrect_rratio 0.25) {{NET6}})
   (pad "7" smd roundrect (at 2.7 -0.635) (size 1.55 0.6) (layers "F.Cu" "F.Paste" "F.Mask") (roundrect_rratio 0.25) {{NET7}})
   (pad "8" smd roundrect (at 2.7 -1.905) (size 1.55 0.6) (layers "F.Cu" "F.Paste" "F.Mask") (roundrect_rratio 0.25) {{NET8}})
+  (model "${{KICAD10_3DMODEL_DIR}}/Package_SO.3dshapes/SOIC-8_3.9x4.9mm_P1.27mm.step"
+    (offset (xyz 0 0 0))
+    (scale (xyz 1 1 1))
+    (rotate (xyz 0 0 0))
+  )
 )""",
 
     "sot23": """(footprint "Package_TO_SOT_SMD:SOT-23" (layer "F.Cu")
@@ -122,6 +142,11 @@ FOOTPRINT_TEMPLATES = {{
   (pad "1" smd roundrect (at -0.95 -1.0) (size 0.8 0.9) (layers "F.Cu" "F.Paste" "F.Mask") (roundrect_rratio 0.25) {{NET1}})
   (pad "2" smd roundrect (at 0.95 -1.0) (size 0.8 0.9) (layers "F.Cu" "F.Paste" "F.Mask") (roundrect_rratio 0.25) {{NET2}})
   (pad "3" smd roundrect (at 0 1.0) (size 0.8 0.9) (layers "F.Cu" "F.Paste" "F.Mask") (roundrect_rratio 0.25) {{NET3}})
+  (model "${{KICAD10_3DMODEL_DIR}}/Package_TO_SOT_SMD.3dshapes/SOT-23.step"
+    (offset (xyz 0 0 0))
+    (scale (xyz 1 1 1))
+    (rotate (xyz 0 0 0))
+  )
 )""",
 
     "header2": """(footprint "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" (layer "F.Cu")
@@ -130,6 +155,11 @@ FOOTPRINT_TEMPLATES = {{
   (fp_rect (start -1.35 -1.35) (end 1.35 3.85) (stroke (width 0.12) (type solid)) (layer "F.SilkS"))
   (pad "1" thru_hole rect (at 0 0) (size 1.7 1.7) (drill 1.0) (layers *.Cu *.Mask) {{NET1}})
   (pad "2" thru_hole oval (at 0 2.54) (size 1.7 1.7) (drill 1.0) (layers *.Cu *.Mask) {{NET2}})
+  (model "${{KICAD10_3DMODEL_DIR}}/Connector_PinHeader_2.54mm.3dshapes/PinHeader_1x02_P2.54mm_Vertical.step"
+    (offset (xyz 0 0 0))
+    (scale (xyz 1 1 1))
+    (rotate (xyz 0 0 0))
+  )
 )""",
 
     "header4": """(footprint "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical" (layer "F.Cu")
@@ -140,6 +170,11 @@ FOOTPRINT_TEMPLATES = {{
   (pad "2" thru_hole oval (at 0 2.54) (size 1.7 1.7) (drill 1.0) (layers *.Cu *.Mask) {{NET2}})
   (pad "3" thru_hole oval (at 0 5.08) (size 1.7 1.7) (drill 1.0) (layers *.Cu *.Mask) {{NET3}})
   (pad "4" thru_hole oval (at 0 7.62) (size 1.7 1.7) (drill 1.0) (layers *.Cu *.Mask) {{NET4}})
+  (model "${{KICAD10_3DMODEL_DIR}}/Connector_PinHeader_2.54mm.3dshapes/PinHeader_1x04_P2.54mm_Vertical.step"
+    (offset (xyz 0 0 0))
+    (scale (xyz 1 1 1))
+    (rotate (xyz 0 0 0))
+  )
 )""",
 
     "barrel": """(footprint "Connector_BarrelJack:BarrelJack_Horizontal" (layer "F.Cu")
@@ -149,6 +184,11 @@ FOOTPRINT_TEMPLATES = {{
   (pad "1" thru_hole oval (at 0 0) (size 2.8 2.0) (drill 1.6) (layers *.Cu *.Mask) {{NET1}})
   (pad "2" thru_hole oval (at 4.7 0) (size 2.8 2.0) (drill 1.6) (layers *.Cu *.Mask) {{NET2}})
   (pad "3" thru_hole oval (at 2.3 3.5) (size 2.8 2.0) (drill 1.6) (layers *.Cu *.Mask) {{NET2}})
+  (model "${{KICAD10_3DMODEL_DIR}}/Connector_BarrelJack.3dshapes/BarrelJack_Horizontal.step"
+    (offset (xyz 0 0 0))
+    (scale (xyz 1 1 1))
+    (rotate (xyz 0 0 0))
+  )
 )""",
 
     "esp32": """(footprint "RF_Module:ESP32-WROOM-32" (layer "F.Cu")
@@ -167,6 +207,11 @@ FOOTPRINT_TEMPLATES = {{
   (pad "10" smd rect (at 8.5 -1.27) (size 2.0 0.9) (layers "F.Cu" "F.Paste" "F.Mask") {{NET2}})
   (pad "11" smd rect (at 8.5 -2.54) (size 2.0 0.9) (layers "F.Cu" "F.Paste" "F.Mask") {{NET3}})
   (pad "12" smd rect (at 8.5 -3.81) (size 2.0 0.9) (layers "F.Cu" "F.Paste" "F.Mask") {{NET4}})
+  (model "${{KICAD10_3DMODEL_DIR}}/RF_Module.3dshapes/ESP32-WROOM-32.step"
+    (offset (xyz 0 0 0))
+    (scale (xyz 1 1 1))
+    (rotate (xyz 0 0 0))
+  )
 )"""
 }}
 
@@ -184,20 +229,21 @@ class Component:
 
     def get_template_key(self) -> str:
         nl = (self.name + " " + self.ref).lower()
-        if "esp32" in nl:
+        # Match capacitors first to avoid "ceramic" / "electrolytic" triggering "ic" substring
+        if "cap" in nl or "c_" in nl or self.type == "decoupling" or "condenser" in nl:
+            return "capacitor"
+        elif "esp32" in nl:
             return "esp32"
         elif "barrel" in nl or "jack" in nl:
             return "barrel"
         elif "header" in nl or "conn" in nl or "terminal" in nl:
             return "header4" if "4" in nl or "i2c" in nl else "header2"
-        elif "soic" in nl or "555" in nl or "lm386" in nl or "opamp" in nl or "ic" in nl or self.type == "ic":
-            return "soic8"
-        elif "sot" in nl or "transistor" in nl or "mosfet" in nl or "regulator" in nl:
-            return "sot23"
         elif "led" in nl:
             return "led"
-        elif "cap" in nl or "c_" in nl or self.type == "decoupling":
-            return "capacitor"
+        elif "sot" in nl or "transistor" in nl or "mosfet" in nl or "regulator" in nl:
+            return "sot23"
+        elif "soic" in nl or "555" in nl or "lm386" in nl or "opamp" in nl or self.type == "ic" or re.search(r'\b(ic|mcu|soc)\b', nl):
+            return "soic8"
         else:
             return "resistor"
 
@@ -225,9 +271,10 @@ class Component:
 # ─── Physics Force-Directed Placement ─────────────────────────────────────────
 def simulate_placement(
     components: List[Component],
-    board_w: float,
-    board_h: float,
-    margin: float = 18.0,
+    min_x: float,
+    max_x: float,
+    min_y: float,
+    max_y: float,
     iterations: int = 300
 ) -> List[Component]:
     """
@@ -236,9 +283,9 @@ def simulate_placement(
     - All components repel each other (Coulomb's Law)
     Produces optimal spatial distribution for low trace crossings.
     """
-    k_repel = 450.0
+    k_repel = 350.0
     k_spring = 0.15
-    rest_len = 16.0
+    rest_len = 12.0
     damping = 0.85
     dt = 0.5
 
@@ -283,8 +330,8 @@ def simulate_placement(
         for c in components:
             c.vx = (c.vx + fx[c.idx] * dt) * damping
             c.vy = (c.vy + fy[c.idx] * dt) * damping
-            c.x = max(margin, min(board_w - margin, c.x + c.vx * dt))
-            c.y = max(margin, min(board_h - margin, c.y + c.vy * dt))
+            c.x = max(min_x, min(max_x, c.x + c.vx * dt))
+            c.y = max(min_y, min(max_y, c.y + c.vy * dt))
 
     return components
 
@@ -332,10 +379,31 @@ def generate_pcb(output_path: str = "output.kicad_pcb") -> bool:
     connectors = COMPONENTS_MANIFEST.get('connectors', [])
 
     total_comps = len(main_ics) + len(decoupling) + len(passives) + len(connectors)
-    area = max(total_comps * 18 * 18, 100 * 80)
-    BOARD_W = round(math.sqrt(area * (4/3)), 1)
-    BOARD_H = round(math.sqrt(area * (3/4)), 1)
-    MARGIN  = 18.0
+
+    # Adaptive board sizing: compact, elegant dimensions scaled to component density
+    if total_comps <= 5:
+        BOARD_W = 50.0
+        BOARD_H = 38.0
+    elif total_comps <= 8:
+        BOARD_W = 62.0
+        BOARD_H = 46.0
+    elif total_comps <= 16:
+        BOARD_W = 78.0
+        BOARD_H = 58.0
+    else:
+        BOARD_W = round(max(90.0, math.sqrt(total_comps * 280 * (4 / 3))), 1)
+        BOARD_H = round(max(65.0, math.sqrt(total_comps * 280 * (3 / 4))), 1)
+
+    START_X = 25.0
+    START_Y = 25.0
+    END_X = round(START_X + BOARD_W, 2)
+    END_Y = round(START_Y + BOARD_H, 2)
+
+    # Component boundary limits (leaving margins for routing and mounting holes)
+    min_x = START_X + 9.0
+    max_x = END_X - 9.0
+    min_y = START_Y + 7.5
+    max_y = END_Y - 7.5
 
     components: List[Component] = []
     idx = 0
@@ -345,24 +413,26 @@ def generate_pcb(output_path: str = "output.kicad_pcb") -> bool:
     for name in connectors:
         ref = f"J{{ref_counters['J']}}"; ref_counters['J'] += 1
         components.append(Component(idx, name, ref, "connector",
-            random.uniform(MARGIN, MARGIN + 12),
-            random.uniform(MARGIN, BOARD_H - MARGIN)))
+            random.uniform(min_x, min_x + 3.0),
+            random.uniform(min_y, max_y)))
         idx += 1
 
-    # ICs in center
+    # ICs centered
+    mid_x = (START_X + END_X) / 2
+    mid_y = (START_Y + END_Y) / 2
     for name in main_ics:
         ref = f"U{{ref_counters['U']}}"; ref_counters['U'] += 1
         components.append(Component(idx, name, ref, "ic",
-            random.uniform(MARGIN + 20, BOARD_W - MARGIN - 20),
-            random.uniform(MARGIN + 20, BOARD_H - MARGIN - 20)))
+            random.uniform(mid_x - 3.0, mid_x + 3.0),
+            random.uniform(mid_y - 3.0, mid_y + 3.0)))
         idx += 1
 
-    # Decoupling caps
+    # Decoupling caps placed nearby IC
     for name in decoupling:
         ref = f"C{{ref_counters['C']}}"; ref_counters['C'] += 1
         components.append(Component(idx, name, ref, "decoupling",
-            random.uniform(MARGIN, BOARD_W - MARGIN),
-            random.uniform(MARGIN, BOARD_H - MARGIN)))
+            random.uniform(mid_x - 7.0, mid_x + 7.0),
+            random.uniform(min_y + 2.0, max_y - 2.0)))
         idx += 1
 
     # Passives
@@ -371,8 +441,8 @@ def generate_pcb(output_path: str = "output.kicad_pcb") -> bool:
         prefix = "D" if is_led else "R"
         ref = f"{{prefix}}{{ref_counters[prefix]}}"; ref_counters[prefix] += 1
         components.append(Component(idx, name, ref, "passive",
-            random.uniform(MARGIN, BOARD_W - MARGIN),
-            random.uniform(MARGIN, BOARD_H - MARGIN)))
+            random.uniform(min_x + 4.0, max_x - 3.0),
+            random.uniform(min_y, max_y)))
         idx += 1
 
     if not components:
@@ -380,7 +450,7 @@ def generate_pcb(output_path: str = "output.kicad_pcb") -> bool:
         return False
 
     # Physics simulation
-    components = simulate_placement(components, BOARD_W, BOARD_H, MARGIN)
+    components = simulate_placement(components, min_x, max_x, min_y, max_y)
 
     # Netlist definition
     net_map = {{
@@ -412,7 +482,6 @@ def generate_pcb(output_path: str = "output.kicad_pcb") -> bool:
     # Route Copper Paths
     segments_str = ""
     vias_str = ""
-    current_layer = "F.Cu"
 
     # Connect decoupling caps directly to nearest IC
     ics = [c for c in components if c.type == "ic"]
@@ -440,10 +509,6 @@ def generate_pcb(output_path: str = "output.kicad_pcb") -> bool:
             via_x, via_y = (p.x + primary_ic.x) / 2, (p.y + primary_ic.y) / 2
             vias_str += f'  (via (at {{via_x:.3f}} {{via_y:.3f}}) (size 0.8) (drill 0.4) (layers "F.Cu" "B.Cu") (net 3))\\n'
 
-    # Board Outline & Mounting Holes
-    board_w = BOARD_W + 30
-    board_h = BOARD_H + 30
-
     header = f"""(kicad_pcb (version 20211014) (generator pcbnew)
   (general (thickness 1.6))
   (paper "A4")
@@ -469,31 +534,31 @@ def generate_pcb(output_path: str = "output.kicad_pcb") -> bool:
 """
 
     outline = f"""
-  (gr_line (start 25 25) (end {{board_w}} 25) (layer "Edge.Cuts") (width 0.15))
-  (gr_line (start {{board_w}} 25) (end {{board_w}} {{board_h}}) (layer "Edge.Cuts") (width 0.15))
-  (gr_line (start {{board_w}} {{board_h}}) (end 25 {{board_h}}) (layer "Edge.Cuts") (width 0.15))
-  (gr_line (start 25 {{board_h}}) (end 25 25) (layer "Edge.Cuts") (width 0.15))
+  (gr_line (start {{START_X}} {{START_Y}}) (end {{END_X}} {{START_Y}}) (layer "Edge.Cuts") (width 0.15))
+  (gr_line (start {{END_X}} {{START_Y}}) (end {{END_X}} {{END_Y}}) (layer "Edge.Cuts") (width 0.15))
+  (gr_line (start {{END_X}} {{END_Y}}) (end {{START_X}} {{END_Y}}) (layer "Edge.Cuts") (width 0.15))
+  (gr_line (start {{START_X}} {{END_Y}}) (end {{START_X}} {{START_Y}}) (layer "Edge.Cuts") (width 0.15))
 """
 
     holes = f"""
-  (footprint "MountingHole:MountingHole_3.2mm_M3" (at 30 30) (layer "F.Cu")
-    (property "Reference" "H1" (at 30 27 0) (layer "F.SilkS"))
-    (property "Value" "M3" (at 30 33 0) (layer "F.Fab"))
+  (footprint "MountingHole:MountingHole_3.2mm_M3" (at {{START_X + 3.5:.1f}} {{START_Y + 3.5:.1f}}) (layer "F.Cu")
+    (property "Reference" "H1" (at {{START_X + 3.5:.1f}} {{START_Y + 1.0:.1f}} 0) (layer "F.SilkS"))
+    (property "Value" "M3" (at {{START_X + 3.5:.1f}} {{START_Y + 6.0:.1f}} 0) (layer "F.Fab"))
     (pad "1" np_thru_hole circle (at 0 0) (size 3.2 3.2) (drill 3.2) (layers *.Cu *.Mask))
   )
-  (footprint "MountingHole:MountingHole_3.2mm_M3" (at {{board_w-5}} 30) (layer "F.Cu")
-    (property "Reference" "H2" (at {{board_w-5}} 27 0) (layer "F.SilkS"))
-    (property "Value" "M3" (at {{board_w-5}} 33 0) (layer "F.Fab"))
+  (footprint "MountingHole:MountingHole_3.2mm_M3" (at {{END_X - 3.5:.1f}} {{START_Y + 3.5:.1f}}) (layer "F.Cu")
+    (property "Reference" "H2" (at {{END_X - 3.5:.1f}} {{START_Y + 1.0:.1f}} 0) (layer "F.SilkS"))
+    (property "Value" "M3" (at {{END_X - 3.5:.1f}} {{START_Y + 6.0:.1f}} 0) (layer "F.Fab"))
     (pad "1" np_thru_hole circle (at 0 0) (size 3.2 3.2) (drill 3.2) (layers *.Cu *.Mask))
   )
-  (footprint "MountingHole:MountingHole_3.2mm_M3" (at 30 {{board_h-5}}) (layer "F.Cu")
-    (property "Reference" "H3" (at 30 {{board_h-8}} 0) (layer "F.SilkS"))
-    (property "Value" "M3" (at 30 {{board_h-2}} 0) (layer "F.Fab"))
+  (footprint "MountingHole:MountingHole_3.2mm_M3" (at {{START_X + 3.5:.1f}} {{END_Y - 3.5:.1f}}) (layer "F.Cu")
+    (property "Reference" "H3" (at {{START_X + 3.5:.1f}} {{END_Y - 6.0:.1f}} 0) (layer "F.SilkS"))
+    (property "Value" "M3" (at {{START_X + 3.5:.1f}} {{END_Y - 1.0:.1f}} 0) (layer "F.Fab"))
     (pad "1" np_thru_hole circle (at 0 0) (size 3.2 3.2) (drill 3.2) (layers *.Cu *.Mask))
   )
-  (footprint "MountingHole:MountingHole_3.2mm_M3" (at {{board_w-5}} {{board_h-5}}) (layer "F.Cu")
-    (property "Reference" "H4" (at {{board_w-5}} {{board_h-8}} 0) (layer "F.SilkS"))
-    (property "Value" "M3" (at {{board_w-5}} {{board_h-2}} 0) (layer "F.Fab"))
+  (footprint "MountingHole:MountingHole_3.2mm_M3" (at {{END_X - 3.5:.1f}} {{END_Y - 3.5:.1f}}) (layer "F.Cu")
+    (property "Reference" "H4" (at {{END_X - 3.5:.1f}} {{END_Y - 6.0:.1f}} 0) (layer "F.SilkS"))
+    (property "Value" "M3" (at {{END_X - 3.5:.1f}} {{END_Y - 1.0:.1f}} 0) (layer "F.Fab"))
     (pad "1" np_thru_hole circle (at 0 0) (size 3.2 3.2) (drill 3.2) (layers *.Cu *.Mask))
   )
 """
@@ -504,17 +569,17 @@ def generate_pcb(output_path: str = "output.kicad_pcb") -> bool:
     (min_thickness 0.25)
     (fill yes)
     (polygon (pts
-      (xy 25 25) (xy {{board_w}} 25) (xy {{board_w}} {{board_h}}) (xy 25 {{board_h}})
+      (xy {{START_X}} {{START_Y}}) (xy {{END_X}} {{START_Y}}) (xy {{END_X}} {{END_Y}}) (xy {{START_X}} {{END_Y}})
     ))
   )
 """
 
     text_labels = f"""
-  (gr_text "CircuitPilot AI · {{CIRCUIT_TITLE}}" (at {{board_w/2:.1f}} 20) (layer "F.SilkS")
-    (effects (font (size 1.8 1.8) (thickness 0.35)))
+  (gr_text "CircuitPilot AI · {{CIRCUIT_TITLE}}" (at {{mid_x:.1f}} {{START_Y - 2.5:.1f}}) (layer "F.SilkS")
+    (effects (font (size 1.2 1.2) (thickness 0.22)))
   )
-  (gr_text "IPC-2152 Compliant · Multi-Layer 45-deg Routed" (at {{board_w/2:.1f}} {{board_h+8}}) (layer "F.SilkS")
-    (effects (font (size 1.3 1.3) (thickness 0.25)))
+  (gr_text "IPC-2152 Compliant · 45-deg Routed" (at {{mid_x:.1f}} {{END_Y + 2.5:.1f}}) (layer "F.SilkS")
+    (effects (font (size 1.0 1.0) (thickness 0.18)))
   )
 """
 
@@ -531,6 +596,28 @@ def generate_pcb(output_path: str = "output.kicad_pcb") -> bool:
         f.write(pcb_content)
 
     print(f"[CircuitPilot] Successfully generated KiCad PCB: {{output_path}}")
+
+    # Automatically refill copper zones via kicad-cli if installed
+    try:
+        kicad_cli_candidates = [
+            r"C:\\Program Files\\KiCad\\10.99\\bin\\kicad-cli.exe",
+            r"C:\\Program Files\\KiCad\\8.0\\bin\\kicad-cli.exe",
+            "kicad-cli"
+        ]
+        for cli in kicad_cli_candidates:
+            if os.path.exists(cli) or cli == "kicad-cli":
+                res = subprocess.run(
+                    [cli, "pcb", "drc", "--refill-zones", "--save-board", output_path],
+                    capture_output=True,
+                    text=True,
+                    timeout=15
+                )
+                if res.returncode == 0:
+                    print(f"[CircuitPilot] Copper zones refilled and saved into: {{output_path}}")
+                    break
+    except Exception:
+        pass
+
     return True
 
 
@@ -558,7 +645,8 @@ def build_and_execute_circuit_script(
     1. Generates the Python script (.py).
     2. Saves it to `output_py_path`.
     3. Executes it with sys.executable to produce `output_pcb_path`.
-    4. Returns (success, python_source_code).
+    4. Automatically refills copper zones and renders 3D snapshot via kicad-cli.
+    5. Returns (success, python_source_code).
     """
     py_dir = os.path.dirname(os.path.abspath(output_py_path))
     pcb_dir = os.path.dirname(os.path.abspath(output_pcb_path))
@@ -590,6 +678,29 @@ def build_and_execute_circuit_script(
             check=True
         )
         print(f"[kicad_py_generator] Execution stdout:\n{proc.stdout}")
+
+        # 4. Generate 3D render preview if kicad-cli is available
+        try:
+            render_png_path = os.path.splitext(output_pcb_path)[0] + "_3d.png"
+            kicad_cli_candidates = [
+                r"C:\Program Files\KiCad\10.99\bin\kicad-cli.exe",
+                r"C:\Program Files\KiCad\8.0\bin\kicad-cli.exe",
+                "kicad-cli"
+            ]
+            for cli in kicad_cli_candidates:
+                if os.path.exists(cli) or cli == "kicad-cli":
+                    subprocess.run(
+                        [cli, "pcb", "render", "--quality", "basic", "--rotate", "-45,0,45", "-o", render_png_path, output_pcb_path],
+                        capture_output=True,
+                        text=True,
+                        timeout=20
+                    )
+                    if os.path.exists(render_png_path):
+                        print(f"[kicad_py_generator] 3D render saved: {render_png_path}")
+                    break
+        except Exception as e:
+            print(f"[kicad_py_generator] 3D render notice: {e}")
+
         return True, py_code
     except subprocess.CalledProcessError as e:
         print(f"[kicad_py_generator] Execution failed: {e.stderr}")
@@ -597,3 +708,4 @@ def build_and_execute_circuit_script(
     except Exception as e:
         print(f"[kicad_py_generator] Execution error: {e}")
         return False, py_code
+
