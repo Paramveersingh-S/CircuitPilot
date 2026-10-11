@@ -471,9 +471,9 @@ def generate_pcb(output_path: str = "output.kicad_pcb") -> bool:
     outline = f"""
   (gr_line (start 25 25) (end {{board_w}} 25) (layer "Edge.Cuts") (width 0.15))
   (gr_line (start {{board_w}} 25) (end {{board_w}} {{board_h}}) (layer "Edge.Cuts") (width 0.15))
-  (gr_line (start {{board_w}} {{board_h}} agency (end 25 {{board_h}}) (layer "Edge.Cuts") (width 0.15))
+  (gr_line (start {{board_w}} {{board_h}}) (end 25 {{board_h}}) (layer "Edge.Cuts") (width 0.15))
   (gr_line (start 25 {{board_h}}) (end 25 25) (layer "Edge.Cuts") (width 0.15))
-""".replace(" agency", "")
+"""
 
     holes = f"""
   (footprint "MountingHole:MountingHole_3.2mm_M3" (at 30 30) (layer "F.Cu")
