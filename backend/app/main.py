@@ -16,6 +16,7 @@ from app.agent.orchestrator import Orchestrator
 from app.agent.session import SessionManager
 from app.db import init_db, create_user, get_user_by_email, get_user_by_id
 from app.auth import hash_password, verify_password, create_access_token, get_current_user_id
+from app.api.auth import router as github_router
 
 load_dotenv()
 
@@ -36,6 +37,8 @@ app = FastAPI(
     description="AI-Powered PCB Design Backend",
     version="1.0.0",
 )
+
+app.include_router(github_router, prefix="/auth/github")
 
 @app.on_event("startup")
 async def startup_event():
